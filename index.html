@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타자 연습 게임</title>
+  <style>
+    :root {
+      --color-bg: #0f1117;
+      --color-surface: #1a1d27;
+      --color-surface-2: #222536;
+      --color-border: #2d3148;
+      --color-primary: #6c63ff;
+      --color-primary-hover: #5a52e0;
+      --color-success: #4caf82;
+      --color-error: #e05a6e;
+      --color-warning: #f0a500;
+      --color-text: #e8eaf0;
+      --color-text-muted: #8b8fa8;
+      --color-premium: #f5c842;
+      --color-ad-bg: #1e2130;
+      --color-ad-border: #2a3050;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: 0.2s ease;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 광고 배너 */
+    .ad-banner {
+      width: 100%;
+      background-color: var(--color-ad-bg);
+      border: 1px dashed var(--color-ad-border);
+      text-align: center;
+      padding: 12px 16px;
+      color: var(--color-text-muted);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity var(--transition);
+    }
+    .ad-banner.ad-top { border-top: none; border-left: none; border-right: none; border-bottom: 1px dashed var(--color-ad-border); }
+    .ad-banner.ad-bottom { border-bottom: none; border-left: none; border-right: none; border-top: 1px dashed var(--color-ad-border); margin-top: auto; }
+    .ad-label { background-color: var(--color-error); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .ad-banner.hidden { display: none; }
+
+    /* 컨테이너 */
+    .container { width: 100%; max-width: 680px; padding: 32px 20px 48px; display: flex; flex-direction: column; align-items: center; gap: 28px; flex: 1; }
+
+    /* 헤더 */
+    .header { text-align: center; position: relative; }
+    .title { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #a78bff 0%, #6c63ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
+    .subtitle { color: var(--color-text-muted); font-size: 0.95rem; margin-top: 6px; }
+    .premium-badge { display: inline-block; background: linear-gradient(135deg, #f5c842, #e09b00); color: #1a1400; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.1em; margin-bottom: 8px; text-transform: uppercase; box-shadow: 0 2px 8px rgba(245,200,66,0.4); }
+
+    /* 점수판 */
+    .scoreboard { display: flex; gap: 12px; width: 100%; }
+    .score-item { flex: 1; background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 16px 12px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+    .score-label { font-size: 0.78rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .score-value { font-size: 2rem; font-weight: 800; color: var(--color-primary); line-height: 1; font-variant-numeric: tabular-nums; }
+    .score-value.danger { color: var(--color-error); animation: pulse 0.8s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* 난이도 */
+    .difficulty-section { width: 100%; text-align: center; }
+    .difficulty-label { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .difficulty-buttons { display: flex; gap: 8px; justify-content: center; }
+    .diff-btn { padding: 8px 20px; border: 2px solid var(--color-border); border-radius: 50px; background-color: transparent; color: var(--color-text-muted); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all var(--transition); font-family: inherit; }
+    .diff-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+    .diff-btn.active { background-color: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+    .diff-btn.premium-locked { opacity: 0.45; cursor: not-allowed; border-style: dashed; }
+    .diff-btn.premium-locked.unlocked { opacity: 1; cursor: pointer; border-style: solid; border-color: var(--color-premium); color: var(--color-premium); }
+    .diff-btn.premium-locked.unlocked.active { background-color: var(--color-premium); color: #1a1400; }
+
+    /* 게임 영역 */
+    .game-area { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .word-display { width: 100%; background-color: var(--color-surface); border: 2px solid var(--color-border); border-radius: var(--radius); padding: 40px 24px; text-align: center; min-height: 130px; display: flex; align-items: center; justify-content: center; transition: border-color var(--transition); }
+    #currentWord { font-size: 2.8rem; font-weight: 800; letter-spacing: 0.04em; color: var(--color-text); word-break: break-all; line-height: 1.2; }
+    .word-input { width: 100%; padding: 16px 20px; font-size: 1.2rem; font-family: inherit; background-color: var(--color-surface-2); border: 2px solid var(--color-border); border-radius: var(--radius); color: var(--color-text); outline: none; transition: border-color var(--transition); text-align: center; }
+    .word-input::placeholder { color: var(--color-text-muted); }
+    .word-input:focus { border-color: var(--color-primary); }
+    .word-input:disabled { opacity: 0.4; cursor: not-allowed; }
+    .feedback { font-size: 1rem; font-weight: 600; min-height: 24px; transition: opacity var(--transition); }
+    .feedback.correct { color: var(--color-success); }
+    .feedback.wrong { color: var(--color-error); }
+
+    /* 버튼 */
+    .action-buttons { display: flex; gap: 12px; justify-content: center; }
+    .btn-start { padding: 14px 40px; background: linear-gradient(135deg, #6c63ff, #5a52e0); color: #fff; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: transform var(--transition), box-shadow var(--transition); box-shadow: 0 4px 16px rgba(108,99,255,0.45); }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(108,99,255,0.6); }
+    .btn-start:active { transform: translateY(0); }
+
+    /* 게임 종료 화면 */
+    .game-over-screen { width: 100%; background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 36px 28px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: var(--shadow); }
+    .game-over-screen h2 { font-size: 1.8rem; font-weight: 800; color: var(--color-text); }
+    .final-score-text { font-size: 1.1rem; color: var(--color-text-muted); }
+    .final-score-text strong { color: var(--color-primary); font-size: 2rem; }
+    .high-score-text { font-size: 0.95rem; color: var(--color-warning); font-weight: 600; }
+
+    /* 프리미엄 통계 */
+    .premium-stats { width: 100%; background-color: var(--color-surface-2); border: 1px solid var(--color-premium); border-radius: var(--radius-sm); padding: 20px; margin-top: 8px; }
+    .premium-stats h3 { font-size: 1rem; color: var(--color-premium); font-weight: 700; margin-bottom: 16px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-item { background-color: var(--color-surface); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .stat-label { font-size: 0.78rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--color-premium); }
+
+    /* 프리미엄 카드 */
+    .premium-section { width: 100%; }
+    .premium-card { background: linear-gradient(135deg, #1a1d2e, #1e2038); border: 1px solid #3d3570; border-radius: var(--radius); padding: 28px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .premium-card h3 { font-size: 1.2rem; font-weight: 800; color: var(--color-premium); }
+    .premium-features { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 280px; }
+    .premium-features li { font-size: 0.95rem; color: var(--color-text); }
+    .premium-price { font-size: 1.3rem; font-weight: 800; color: #fff; background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.4); padding: 6px 20px; border-radius: 50px; }
+    .btn-premium { padding: 14px 36px; background: linear-gradient(135deg, #f5c842, #e09b00); color: #1a1400; border: none; border-radius: 50px; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; transition: transform var(--transition), box-shadow var(--transition); box-shadow: 0 4px 16px rgba(245,200,66,0.4); width: 100%; max-width: 300px; }
+    .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(245,200,66,0.6); }
+    .btn-demo { background: transparent; border: 1px dashed var(--color-border); color: var(--color-text-muted); padding: 6px 16px; border-radius: 50px; font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .btn-demo:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+
+    /* 커스텀 단어 업로드 */
+    .custom-words-section { width: 100%; background-color: var(--color-surface); border: 1px solid var(--color-premium); border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .custom-words-section h3 { font-size: 1rem; font-weight: 700; color: var(--color-premium); }
+    .upload-hint { font-size: 0.85rem; color: var(--color-text-muted); }
+    .custom-words-input { width: 100%; background-color: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); padding: 12px 14px; font-size: 0.9rem; font-family: 'Courier New', monospace; resize: vertical; outline: none; transition: border-color var(--transition); }
+    .custom-words-input:focus { border-color: var(--color-premium); }
+    .upload-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .file-input { display: none; }
+    .btn-upload { padding: 8px 18px; background-color: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); font-size: 0.88rem; cursor: pointer; transition: all var(--transition); font-family: inherit; }
+    .btn-upload:hover { border-color: var(--color-premium); color: var(--color-premium); }
+    .btn-apply { padding: 8px 18px; background-color: var(--color-premium); color: #1a1400; border: none; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity var(--transition); }
+    .btn-apply:hover { opacity: 0.85; }
+    .upload-status { font-size: 0.85rem; color: var(--color-success); min-height: 18px; }
+
+    /* 유틸 */
+    .hidden { display: none !important; }
+
+    /* 모바일 */
+    @media (max-width: 480px) {
+      .container { padding: 20px 14px 36px; gap: 20px; }
+      .title { font-size: 1.7rem; }
+      .scoreboard { gap: 8px; }
+      .score-item { padding: 12px 8px; }
+      .score-value { font-size: 1.5rem; }
+      .score-label { font-size: 0.68rem; }
+      #currentWord { font-size: 2rem; }
+      .word-display { padding: 28px 16px; min-height: 100px; }
+      .difficulty-buttons { flex-wrap: wrap; }
+      .diff-btn { padding: 7px 16px; font-size: 0.85rem; }
+      .stats-grid { gap: 8px; }
+      .btn-start { padding: 12px 30px; font-size: 0.95rem; }
+      .premium-card { padding: 20px 16px; }
+    }
+
+    /* 애니메이션 */
+    @keyframes wordIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .word-anim { animation: wordIn 0.22s ease forwards; }
+    @keyframes flashGreen { 0% { background-color: rgba(76,175,130,0.18); } 100% { background-color: transparent; } }
+    .flash-correct { animation: flashGreen 0.35s ease forwards; }
+    @keyframes shakeRed { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .shake-wrong { animation: shakeRed 0.3s ease; }
+  </style>
+</head>
+<body>
+
+  <div class="ad-banner ad-top" id="adTop">
+    <span class="ad-label">광고</span>
+    <p>여기에 광고가 들어갑니다 (상단 배너)</p>
+  </div>
+
+  <div class="container">
+
+    <header class="header">
+      <span class="premium-badge hidden" id="premiumBadge">✦ PREMIUM</span>
+      <h1 class="title">⌨️ 타자 연습</h1>
+      <p class="subtitle">얼마나 빠르게 입력할 수 있을까요?</p>
+    </header>
+
+    <div class="scoreboard">
+      <div class="score-item">
+        <span class="score-label">남은 시간</span>
+        <span class="score-value" id="timer">60</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">현재 점수</span>
+        <span class="score-value" id="score">0</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">최고 점수</span>
+        <span class="score-value" id="highScore">0</span>
+      </div>
+    </div>
+
+    <div class="difficulty-section" id="difficultySection">
+      <p class="difficulty-label">난이도 선택</p>
+      <div class="difficulty-buttons">
+        <button class="diff-btn active" data-level="easy">쉬움</button>
+        <button class="diff-btn" data-level="normal">보통</button>
+        <button class="diff-btn premium-locked" data-level="hard" id="hardBtn">어려움 🔒</button>
+      </div>
+    </div>
+
+    <div class="game-area">
+      <div class="word-display" id="wordDisplay">
+        <span id="currentWord">시작을 눌러주세요</span>
+      </div>
+      <input type="text" class="word-input" id="wordInput"
+        placeholder="단어를 입력하세요..."
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled />
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn-start" id="startBtn">게임 시작</button>
+    </div>
+
+    <div class="game-over-screen hidden" id="gameOverScreen">
+      <h2>게임 종료!</h2>
+      <p class="final-score-text">최종 점수: <strong id="finalScore">0</strong></p>
+      <p class="high-score-text" id="highScoreText"></p>
+      <div class="premium-stats hidden" id="premiumStats">
+        <h3>상세 통계 (프리미엄)</h3>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-label">정확도</span><span class="stat-value" id="statAccuracy">0%</span></div>
+          <div class="stat-item"><span class="stat-label">총 시도</span><span class="stat-value" id="statTotal">0</span></div>
+          <div class="stat-item"><span class="stat-label">분당 단어 수 (WPM)</span><span class="stat-value" id="statWPM">0</span></div>
+          <div class="stat-item"><span class="stat-label">평균 타수 (CPM)</span><span class="stat-value" id="statCPM">0</span></div>
+        </div>
+      </div>
+      <button class="btn-start" id="restartBtn">다시 시작하기</button>
+    </div>
+
+    <div class="premium-section" id="premiumSection">
+      <div class="premium-card">
+        <h3>🚀 프리미엄으로 업그레이드</h3>
+        <ul class="premium-features">
+          <li>✅ 광고 완전 제거</li>
+          <li>✅ Hard 난이도 해금</li>
+          <li>✅ 상세 통계 (정확도, WPM, CPM)</li>
+          <li>✅ 커스텀 단어 리스트 업로드</li>
+        </ul>
+        <p class="premium-price">₩4,900 / 월</p>
+        <button class="btn-premium" id="stripeBtn">💳 프리미엄 업그레이드</button>
+        <button class="btn-demo" id="demoToggle">[데모] 프리미엄 토글</button>
+      </div>
+    </div>
+
+    <div class="custom-words-section hidden" id="customWordsSection">
+      <h3>커스텀 단어 리스트 업로드 (프리미엄)</h3>
+      <p class="upload-hint">한 줄에 하나씩 단어를 입력하거나 .txt 파일을 업로드하세요</p>
+      <textarea class="custom-words-input" id="customWordsInput"
+        placeholder="apple&#10;banana&#10;cherry&#10;..." rows="5"></textarea>
+      <div class="upload-actions">
+        <input type="file" id="fileUpload" accept=".txt" class="file-input" />
+        <label for="fileUpload" class="btn-upload">파일 업로드</label>
+        <button class="btn-apply" id="applyCustomWords">적용하기</button>
+      </div>
+      <p class="upload-status" id="uploadStatus"></p>
+    </div>
+
+  </div>
+
+  <div class="ad-banner ad-bottom" id="adBottom">
+    <span class="ad-label">광고</span>
+    <p>여기에 광고가 들어갑니다 (하단 배너)</p>
+  </div>
+
+  <script>
+    /* ============================================================
+       단어 데이터베이스
+    ============================================================ */
+    const WORD_LIST = {
+      easy: [
+        "cat","dog","run","fly","eat","sun","map","key","cup","hat","red","big","pen","box","arm","leg",
+        "eye","sky","sea","car","bus","fan","bag","bed","ice","egg","ant","bee","fox","owl","cow","hen",
+        "사과","바나나","고양이","강아지","하늘","바다","나무","꽃","별","달","해","비","눈","불","물","집"
+      ],
+      normal: [
+        "apple","brain","cloud","dance","eagle","flame","grape","happy","image","juice","knife","light",
+        "magic","night","ocean","piano","queen","river","sharp","tiger","ultra","voice","water","yellow",
+        "zipper","bridge","castle","dragon","forest","garden","hunter","island","jungle","kitten","lemon",
+        "monkey","nugget","orange",
+        "컴퓨터","키보드","마우스","프린터","모니터","스마트폰","자동차","비행기","기차역","도서관","영화관","수영장","피자가게","커피숍","편의점","약국"
+      ],
+      hard: [
+        "adventure","beautiful","celebrate","dangerous","efficient","fantastic","gorgeous","happiness",
+        "important","justified","knowledge","laughable","necessary","orchestra","perfectly","qualified",
+        "resources","structure","telephone","universal","variation","wonderful","algorithm","benchmark",
+        "carefully","dashboard","establish","framework","gradients","highlight","interview","javascript",
+        "keyboards","lightning","marketing","nutrition","objective","questions","reference","startling",
+        "technical","uncertain","validated","workspace",
+        "인공지능","빅데이터","사물인터넷","클라우드컴퓨팅","프로그래밍","알고리즘","데이터베이스","머신러닝","딥러닝기술","블록체인","메타버스","가상현실"
+      ]
+    };
+
+    /* ============================================================
+       Stripe 설정 — 실제 Payment Link로 교체하세요
+    ============================================================ */
+    const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/PLACEHOLDER_REPLACE_WITH_REAL_LINK";
+    const SUCCESS_URL = `${window.location.origin}${window.location.pathname}?payment=success`;
+    const CANCEL_URL  = `${window.location.origin}${window.location.pathname}?payment=cancel`;
+
+    /* ============================================================
+       게임 상태 변수
+    ============================================================ */
+    let currentWord = "", score = 0, highScore = 0, timeLeft = 60;
+    let timerInterval = null, isGameRunning = false, isPremium = false;
+    let currentDifficulty = "easy";
+    let totalAttempts = 0, correctAttempts = 0, totalCharsTyped = 0;
+    let customWordList = null;
+
+    /* ============================================================
+       DOM 캐싱
+    ============================================================ */
+    const timerEl        = document.getElementById("timer");
+    const scoreEl        = document.getElementById("score");
+    const highScoreEl    = document.getElementById("highScore");
+    const currentWordEl  = document.getElementById("currentWord");
+    const wordInputEl    = document.getElementById("wordInput");
+    const feedbackEl     = document.getElementById("feedback");
+    const startBtn       = document.getElementById("startBtn");
+    const restartBtn     = document.getElementById("restartBtn");
+    const gameOverEl     = document.getElementById("gameOverScreen");
+    const finalScoreEl   = document.getElementById("finalScore");
+    const highScoreTxtEl = document.getElementById("highScoreText");
+    const premiumBadge   = document.getElementById("premiumBadge");
+    const premiumSection = document.getElementById("premiumSection");
+    const adTop          = document.getElementById("adTop");
+    const adBottom       = document.getElementById("adBottom");
+    const hardBtn        = document.getElementById("hardBtn");
+    const customWordsSection = document.getElementById("customWordsSection");
+    const premiumStatsEl = document.getElementById("premiumStats");
+    const difficultySection = document.getElementById("difficultySection");
+    const statAccuracy   = document.getElementById("statAccuracy");
+    const statTotal      = document.getElementById("statTotal");
+    const statWPM        = document.getElementById("statWPM");
+    const statCPM        = document.getElementById("statCPM");
+    const customWordsInput = document.getElementById("customWordsInput");
+    const fileUpload     = document.getElementById("fileUpload");
+    const applyCustomWords = document.getElementById("applyCustomWords");
+    const uploadStatus   = document.getElementById("uploadStatus");
+
+    /* ============================================================
+       초기화
+    ============================================================ */
+    function init() {
+      highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
+      isPremium = localStorage.getItem("premium") === "true";
+      highScoreEl.textContent = highScore;
+      updatePremiumUI();
+      checkPaymentResult();
+    }
+
+    function checkPaymentResult() {
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get("payment");
+      if (payment === "success") {
+        localStorage.setItem("premium", "true");
+        isPremium = true;
+        updatePremiumUI();
+        alert("🎉 프리미엄 업그레이드 완료! 모든 기능이 해금되었습니다.");
+        window.history.replaceState({}, "", window.location.pathname);
+      } else if (payment === "cancel") {
+        alert("결제가 취소되었습니다.");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+
+    function updatePremiumUI() {
+      if (isPremium) {
+        adTop.classList.add("hidden");
+        adBottom.classList.add("hidden");
+        premiumBadge.classList.remove("hidden");
+        hardBtn.classList.add("unlocked");
+        hardBtn.textContent = "어려움 ⚡";
+        customWordsSection.classList.remove("hidden");
+        premiumSection.classList.add("hidden");
+      } else {
+        adTop.classList.remove("hidden");
+        adBottom.classList.remove("hidden");
+        premiumBadge.classList.add("hidden");
+        hardBtn.classList.remove("unlocked");
+        hardBtn.textContent = "어려움 🔒";
+        customWordsSection.classList.add("hidden");
+        premiumSection.classList.remove("hidden");
+      }
+    }
+
+    function getRandomWord() {
+      const list = (isPremium && customWordList && customWordList.length > 0)
+        ? customWordList : WORD_LIST[currentDifficulty];
+      let word;
+      do { word = list[Math.floor(Math.random() * list.length)]; }
+      while (word === currentWord && list.length > 1);
+      return word;
+    }
+
+    function showNewWord() {
+      currentWord = getRandomWord();
+      currentWordEl.textContent = currentWord;
+      currentWordEl.classList.remove("word-anim");
+      void currentWordEl.offsetWidth;
+      currentWordEl.classList.add("word-anim");
+    }
+
+    /* ============================================================
+       게임 흐름
+    ============================================================ */
+    function startGame() {
+      score = 0; timeLeft = 60; totalAttempts = 0; correctAttempts = 0; totalCharsTyped = 0;
+      scoreEl.textContent = "0";
+      timerEl.textContent = "60";
+      timerEl.classList.remove("danger");
+      feedbackEl.textContent = "";
+      feedbackEl.className = "feedback";
+      wordInputEl.value = "";
+      wordInputEl.disabled = false;
+      wordInputEl.focus();
+      gameOverEl.classList.add("hidden");
+      startBtn.classList.add("hidden");
+      difficultySection.classList.add("hidden");
+      isGameRunning = true;
+      showNewWord();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 5) timerEl.classList.add("danger");
+      if (timeLeft <= 0) endGame();
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      isGameRunning = false;
+      wordInputEl.disabled = true;
+      wordInputEl.value = "";
+      const isNewHighScore = score > highScore;
+      if (isNewHighScore) {
+        highScore = score;
+        localStorage.setItem("typingHighScore", String(highScore));
+        highScoreEl.textContent = highScore;
+      }
+      finalScoreEl.textContent = score;
+      highScoreTxtEl.textContent = isNewHighScore ? "🏆 새로운 최고 기록!" : `최고 기록: ${highScore}점`;
+      if (isPremium) {
+        const accuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
+        statAccuracy.textContent = `${accuracy}%`;
+        statTotal.textContent = totalAttempts;
+        statWPM.textContent = correctAttempts;
+        statCPM.textContent = totalCharsTyped;
+        premiumStatsEl.classList.remove("hidden");
+      } else {
+        premiumStatsEl.classList.add("hidden");
+      }
+      gameOverEl.classList.remove("hidden");
+      startBtn.classList.add("hidden");
+      difficultySection.classList.remove("hidden");
+    }
+
+    /* ============================================================
+       입력 처리
+    ============================================================ */
+    function handleInput(e) {
+      if (!isGameRunning) return;
+      const typed = wordInputEl.value.trim();
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        submitWord(typed);
+        return;
+      }
+      if (typed.length > 0) {
+        wordInputEl.style.borderColor = currentWord.startsWith(typed) ? "var(--color-success)" : "var(--color-error)";
+      } else {
+        wordInputEl.style.borderColor = "";
+      }
+    }
+
+    function submitWord(typed) {
+      if (!typed) return;
+      totalAttempts++;
+      if (typed === currentWord) {
+        correctAttempts++;
+        totalCharsTyped += currentWord.length;
+        score++;
+        scoreEl.textContent = score;
+        feedbackEl.textContent = "✓ 정답!";
+        feedbackEl.className = "feedback correct";
+        const wordDisplay = document.querySelector(".word-display");
+        wordDisplay.classList.add("flash-correct");
+        setTimeout(() => wordDisplay.classList.remove("flash-correct"), 350);
+        wordInputEl.value = "";
+        wordInputEl.style.borderColor = "";
+        showNewWord();
+      } else {
+        feedbackEl.textContent = "✗ 틀렸습니다";
+        feedbackEl.className = "feedback wrong";
+        wordInputEl.classList.add("shake-wrong");
+        setTimeout(() => wordInputEl.classList.remove("shake-wrong"), 300);
+        wordInputEl.value = "";
+        wordInputEl.style.borderColor = "";
+      }
+      setTimeout(() => { feedbackEl.textContent = ""; feedbackEl.className = "feedback"; }, 700);
+    }
+
+    function handleDifficultyClick(e) {
+      const btn = e.target.closest(".diff-btn");
+      if (!btn || isGameRunning) return;
+      const level = btn.dataset.level;
+      if (level === "hard" && !isPremium) {
+        alert("Hard 난이도는 프리미엄 전용 기능입니다.\n아래 '프리미엄 업그레이드' 버튼을 클릭하세요.");
+        return;
+      }
+      document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentDifficulty = level;
+    }
+
+    function handleStripePayment() {
+      if (STRIPE_PAYMENT_LINK.includes("PLACEHOLDER")) {
+        alert("결제 시스템 안내\n\nStripe 대시보드에서 Payment Link를 생성하고\nSTRIPE_PAYMENT_LINK 값을 교체하세요.\n\n[데모용] '프리미엄 토글' 버튼으로 기능을 체험해보세요.");
+        return;
+      }
+      window.location.href = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(SUCCESS_URL)}&cancel_url=${encodeURIComponent(CANCEL_URL)}`;
+    }
+
+    function handleDemoToggle() {
+      isPremium = !isPremium;
+      localStorage.setItem("premium", isPremium ? "true" : "false");
+      updatePremiumUI();
+      alert(isPremium ? "✨ [데모] 프리미엄 모드가 활성화되었습니다!" : "[데모] 프리미엄 모드가 비활성화되었습니다.");
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.name.endsWith(".txt")) {
+        uploadStatus.textContent = "⚠ .txt 파일만 업로드 가능합니다.";
+        uploadStatus.style.color = "var(--color-error)";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        customWordsInput.value = ev.target.result;
+        uploadStatus.textContent = `✓ '${file.name}' 파일을 불러왔습니다.`;
+        uploadStatus.style.color = "var(--color-success)";
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    function handleApplyCustomWords() {
+      const raw = customWordsInput.value.trim();
+      if (!raw) { uploadStatus.textContent = "⚠ 단어를 입력하거나 파일을 업로드하세요."; uploadStatus.style.color = "var(--color-error)"; return; }
+      const words = raw.split("\n").map(w => w.trim()).filter(w => w.length > 0);
+      if (words.length < 5) { uploadStatus.textContent = "⚠ 최소 5개 이상의 단어를 입력하세요."; uploadStatus.style.color = "var(--color-error)"; return; }
+      customWordList = words;
+      uploadStatus.textContent = `✓ ${words.length}개 단어가 적용되었습니다!`;
+      uploadStatus.style.color = "var(--color-success)";
+    }
+
+    /* ============================================================
+       이벤트 등록
+    ============================================================ */
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", () => {
+      gameOverEl.classList.add("hidden");
+      startBtn.classList.remove("hidden");
+      difficultySection.classList.remove("hidden");
+      startGame();
+    });
+    wordInputEl.addEventListener("keydown", handleInput);
+    wordInputEl.addEventListener("input", handleInput);
+    wordInputEl.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault(); });
+    document.querySelector(".difficulty-buttons").addEventListener("click", handleDifficultyClick);
+    document.getElementById("stripeBtn").addEventListener("click", handleStripePayment);
+    document.getElementById("demoToggle").addEventListener("click", handleDemoToggle);
+    fileUpload.addEventListener("change", handleFileUpload);
+    applyCustomWords.addEventListener("click", handleApplyCustomWords);
+
+    /* 시작 */
+    init();
+  </script>
+</body>
+</html>
