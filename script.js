@@ -1,0 +1,467 @@
+/* ============================================================
+   script.js — 타자 연습 게임 메인 로직
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. 단어 데이터베이스
+      - easy  : 3~4글자 영어 / 2~3자 한글
+      - normal: 5~7글자 영어 / 4~6자 한글
+      - hard  : 8~12글자 영어 / 6~9자 한글 (프리미엄 전용)
+   ---------------------------------------------------------- */
+const WORD_LIST = {
+  easy: [
+    "cat", "dog", "run", "fly", "eat", "sun", "map", "key",
+    "cup", "hat", "red", "big", "pen", "box", "arm", "leg",
+    "eye", "sky", "sea", "car", "bus", "fan", "bag", "bed",
+    "ice", "egg", "ant", "bee", "fox", "owl", "cow", "hen",
+    "사과", "바나나", "고양이", "강아지", "하늘", "바다", "나무",
+    "꽃", "별", "달", "해", "비", "눈", "불", "물", "집"
+  ],
+  normal: [
+    "apple", "brain", "cloud", "dance", "eagle", "flame", "grape",
+    "happy", "image", "juice", "knife", "light", "magic", "night",
+    "ocean", "piano", "queen", "river", "sharp", "tiger", "ultra",
+    "voice", "water", "yellow", "zipper", "bridge", "castle", "dragon",
+    "forest", "garden", "hunter", "island", "jungle", "kitten", "lemon",
+    "monkey", "nugget", "orange",
+    "컴퓨터", "키보드", "마우스", "프린터", "모니터", "스마트폰",
+    "자동차", "비행기", "기차역", "도서관", "영화관", "수영장",
+    "피자가게", "커피숍", "편의점", "약국"
+  ],
+  hard: [
+    "adventure", "beautiful", "celebrate", "dangerous", "efficient",
+    "fantastic", "gorgeous", "happiness", "important", "justified",
+    "knowledge", "laughable", "necessary", "orchestra", "perfectly",
+    "qualified", "resources", "structure", "telephone", "universal",
+    "variation", "wonderful", "algorithm", "benchmark", "carefully",
+    "dashboard", "establish", "framework", "gradients", "highlight",
+    "interview", "javascript", "keyboards", "lightning", "marketing",
+    "nutrition", "objective", "questions", "reference", "startling",
+    "technical", "uncertain", "validated", "workspace",
+    "인공지능", "빅데이터", "사물인터넷", "클라우드컴퓨팅",
+    "프로그래밍", "알고리즘", "데이터베이스", "머신러닝",
+    "딥러닝기술", "블록체인", "메타버스", "가상현실"
+  ]
+};
+
+/* ----------------------------------------------------------
+   2. Stripe 설정
+      실제 배포 시 Stripe 대시보드에서 Payment Link를 생성하고
+      아래 STRIPE_PAYMENT_LINK 값을 교체하세요.
+      결제 성공 후 ?payment=success 파라미터로 돌아옵니다.
+   ---------------------------------------------------------- */
+const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/PLACEHOLDER_REPLACE_WITH_REAL_LINK";
+const SUCCESS_URL = `${window.location.origin}${window.location.pathname}?payment=success`;
+const CANCEL_URL  = `${window.location.origin}${window.location.pathname}?payment=cancel`;
+
+/* ----------------------------------------------------------
+   3. 게임 상태 변수
+   ---------------------------------------------------------- */
+let currentWord      = "";
+let score            = 0;
+let highScore        = 0;
+let timeLeft         = 60;
+let timerInterval    = null;
+let isGameRunning    = false;
+let isPremium        = false;
+let currentDifficulty = "easy";
+
+let totalAttempts    = 0;
+let correctAttempts  = 0;
+let totalCharsTyped  = 0;
+
+let customWordList   = null;
+
+/* ----------------------------------------------------------
+   4. DOM 요소 캐싱
+   ---------------------------------------------------------- */
+const timerEl           = document.getElementById("timer");
+const scoreEl           = document.getElementById("score");
+const highScoreEl       = document.getElementById("highScore");
+const currentWordEl     = document.getElementById("currentWord");
+const wordInputEl       = document.getElementById("wordInput");
+const feedbackEl        = document.getElementById("feedback");
+const startBtn          = document.getElementById("startBtn");
+const restartBtn        = document.getElementById("restartBtn");
+const gameOverEl        = document.getElementById("gameOverScreen");
+const finalScoreEl      = document.getElementById("finalScore");
+const highScoreTxtEl    = document.getElementById("highScoreText");
+const premiumBadge      = document.getElementById("premiumBadge");
+const premiumSection    = document.getElementById("premiumSection");
+const adTop             = document.getElementById("adTop");
+const adBottom          = document.getElementById("adBottom");
+const hardBtn           = document.getElementById("hardBtn");
+const customWordsSection = document.getElementById("customWordsSection");
+const premiumStatsEl    = document.getElementById("premiumStats");
+const difficultySection = document.getElementById("difficultySection");
+const statAccuracy      = document.getElementById("statAccuracy");
+const statTotal         = document.getElementById("statTotal");
+const statWPM           = document.getElementById("statWPM");
+const statCPM           = document.getElementById("statCPM");
+const customWordsInput  = document.getElementById("customWordsInput");
+const fileUpload        = document.getElementById("fileUpload");
+const applyCustomWords  = document.getElementById("applyCustomWords");
+const uploadStatus      = document.getElementById("uploadStatus");
+
+/* ----------------------------------------------------------
+   5. 초기화
+   ---------------------------------------------------------- */
+function init() {
+  highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
+  isPremium = localStorage.getItem("premium") === "true";
+  highScoreEl.textContent = highScore;
+  updatePremiumUI();
+  checkPaymentResult();
+}
+
+/* ----------------------------------------------------------
+   6. Stripe 결제 결과 확인
+   ---------------------------------------------------------- */
+function checkPaymentResult() {
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get("payment");
+
+  if (payment === "success") {
+    localStorage.setItem("premium", "true");
+    isPremium = true;
+    updatePremiumUI();
+    alert("🎉 프리미엄 업그레이드 완료! 모든 기능이 해금되었습니다.");
+    window.history.replaceState({}, "", window.location.pathname);
+  } else if (payment === "cancel") {
+    alert("결제가 취소되었습니다.");
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+}
+
+/* ----------------------------------------------------------
+   7. 프리미엄 UI 업데이트
+   ---------------------------------------------------------- */
+function updatePremiumUI() {
+  if (isPremium) {
+    adTop.classList.add("hidden");
+    adBottom.classList.add("hidden");
+    premiumBadge.classList.remove("hidden");
+    hardBtn.classList.add("unlocked");
+    hardBtn.textContent = "어려움 ⚡";
+    customWordsSection.classList.remove("hidden");
+    premiumSection.classList.add("hidden");
+  } else {
+    adTop.classList.remove("hidden");
+    adBottom.classList.remove("hidden");
+    premiumBadge.classList.add("hidden");
+    hardBtn.classList.remove("unlocked");
+    hardBtn.textContent = "어려움 🔒";
+    customWordsSection.classList.add("hidden");
+    premiumSection.classList.remove("hidden");
+  }
+}
+
+/* ----------------------------------------------------------
+   8. 랜덤 단어 선택
+   ---------------------------------------------------------- */
+function getRandomWord() {
+  const list = (isPremium && customWordList && customWordList.length > 0)
+    ? customWordList
+    : WORD_LIST[currentDifficulty];
+
+  let word;
+  do {
+    word = list[Math.floor(Math.random() * list.length)];
+  } while (word === currentWord && list.length > 1);
+
+  return word;
+}
+
+/* ----------------------------------------------------------
+   9. 새 단어 표시
+   ---------------------------------------------------------- */
+function showNewWord() {
+  currentWord = getRandomWord();
+  currentWordEl.textContent = currentWord;
+  currentWordEl.classList.remove("word-anim");
+  void currentWordEl.offsetWidth;
+  currentWordEl.classList.add("word-anim");
+}
+
+/* ----------------------------------------------------------
+   10. 게임 시작
+   ---------------------------------------------------------- */
+function startGame() {
+  score = 0;
+  timeLeft = 60;
+  totalAttempts = 0;
+  correctAttempts = 0;
+  totalCharsTyped = 0;
+
+  scoreEl.textContent = "0";
+  timerEl.textContent = "60";
+  timerEl.classList.remove("danger");
+  feedbackEl.textContent = "";
+  feedbackEl.className = "feedback";
+  wordInputEl.value = "";
+  wordInputEl.disabled = false;
+  wordInputEl.focus();
+
+  gameOverEl.classList.add("hidden");
+  startBtn.classList.add("hidden");
+  difficultySection.classList.add("hidden");
+
+  isGameRunning = true;
+  showNewWord();
+  timerInterval = setInterval(tick, 1000);
+}
+
+/* ----------------------------------------------------------
+   11. 타이머 tick
+   ---------------------------------------------------------- */
+function tick() {
+  timeLeft--;
+  timerEl.textContent = timeLeft;
+
+  if (timeLeft <= 5) {
+    timerEl.classList.add("danger");
+  }
+
+  if (timeLeft <= 0) {
+    endGame();
+  }
+}
+
+/* ----------------------------------------------------------
+   12. 게임 종료
+   ---------------------------------------------------------- */
+function endGame() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  isGameRunning = false;
+
+  wordInputEl.disabled = true;
+  wordInputEl.value = "";
+
+  const isNewHighScore = score > highScore;
+  if (isNewHighScore) {
+    highScore = score;
+    localStorage.setItem("typingHighScore", String(highScore));
+    highScoreEl.textContent = highScore;
+  }
+
+  finalScoreEl.textContent = score;
+  highScoreTxtEl.textContent = isNewHighScore
+    ? "🏆 새로운 최고 기록!"
+    : `최고 기록: ${highScore}점`;
+
+  if (isPremium) {
+    const accuracy = totalAttempts > 0
+      ? Math.round((correctAttempts / totalAttempts) * 100)
+      : 0;
+    statAccuracy.textContent = `${accuracy}%`;
+    statTotal.textContent    = totalAttempts;
+    statWPM.textContent      = correctAttempts;
+    statCPM.textContent      = totalCharsTyped;
+    premiumStatsEl.classList.remove("hidden");
+  } else {
+    premiumStatsEl.classList.add("hidden");
+  }
+
+  gameOverEl.classList.remove("hidden");
+  startBtn.classList.add("hidden");
+  difficultySection.classList.remove("hidden");
+}
+
+/* ----------------------------------------------------------
+   13. 입력 처리
+   ---------------------------------------------------------- */
+function handleInput(e) {
+  if (!isGameRunning) return;
+
+  const typed = wordInputEl.value.trim();
+
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    submitWord(typed);
+    return;
+  }
+
+  if (typed.length > 0) {
+    wordInputEl.style.borderColor = currentWord.startsWith(typed)
+      ? "var(--color-success)"
+      : "var(--color-error)";
+  } else {
+    wordInputEl.style.borderColor = "";
+  }
+}
+
+/* ----------------------------------------------------------
+   14. 단어 제출
+   ---------------------------------------------------------- */
+function submitWord(typed) {
+  if (!typed) return;
+
+  totalAttempts++;
+
+  if (typed === currentWord) {
+    correctAttempts++;
+    totalCharsTyped += currentWord.length;
+    score++;
+    scoreEl.textContent = score;
+
+    feedbackEl.textContent = "✓ 정답!";
+    feedbackEl.className = "feedback correct";
+
+    const wordDisplay = document.querySelector(".word-display");
+    wordDisplay.classList.add("flash-correct");
+    setTimeout(() => wordDisplay.classList.remove("flash-correct"), 350);
+
+    wordInputEl.value = "";
+    wordInputEl.style.borderColor = "";
+    showNewWord();
+  } else {
+    feedbackEl.textContent = "✗ 틀렸습니다";
+    feedbackEl.className = "feedback wrong";
+
+    wordInputEl.classList.add("shake-wrong");
+    setTimeout(() => wordInputEl.classList.remove("shake-wrong"), 300);
+
+    wordInputEl.value = "";
+    wordInputEl.style.borderColor = "";
+  }
+
+  setTimeout(() => {
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+  }, 700);
+}
+
+/* ----------------------------------------------------------
+   15. 난이도 버튼 처리
+   ---------------------------------------------------------- */
+function handleDifficultyClick(e) {
+  const btn = e.target.closest(".diff-btn");
+  if (!btn || isGameRunning) return;
+
+  const level = btn.dataset.level;
+
+  if (level === "hard" && !isPremium) {
+    alert("Hard 난이도는 프리미엄 전용 기능입니다.\n아래 '프리미엄 업그레이드' 버튼을 클릭하세요.");
+    return;
+  }
+
+  document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentDifficulty = level;
+}
+
+/* ----------------------------------------------------------
+   16. Stripe 결제 버튼
+   ---------------------------------------------------------- */
+function handleStripePayment() {
+  if (STRIPE_PAYMENT_LINK.includes("PLACEHOLDER")) {
+    alert(
+      "결제 시스템 안내\n\n" +
+      "Stripe 대시보드에서 Payment Link를 생성하고\n" +
+      "script.js의 STRIPE_PAYMENT_LINK 값을 교체하세요.\n\n" +
+      "[데모용] '프리미엄 토글' 버튼으로 기능을 체험해보세요."
+    );
+    return;
+  }
+  const url = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(SUCCESS_URL)}&cancel_url=${encodeURIComponent(CANCEL_URL)}`;
+  window.location.href = url;
+}
+
+/* ----------------------------------------------------------
+   17. 데모 프리미엄 토글 (배포 전 제거 권장)
+   ---------------------------------------------------------- */
+function handleDemoToggle() {
+  isPremium = !isPremium;
+  localStorage.setItem("premium", isPremium ? "true" : "false");
+  updatePremiumUI();
+  alert(isPremium
+    ? "✨ [데모] 프리미엄 모드가 활성화되었습니다!"
+    : "[데모] 프리미엄 모드가 비활성화되었습니다."
+  );
+}
+
+/* ----------------------------------------------------------
+   18. 커스텀 단어 파일 업로드 (프리미엄)
+   ---------------------------------------------------------- */
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.name.endsWith(".txt")) {
+    uploadStatus.textContent = "⚠ .txt 파일만 업로드 가능합니다.";
+    uploadStatus.style.color = "var(--color-error)";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    customWordsInput.value = ev.target.result;
+    uploadStatus.textContent = `✓ '${file.name}' 파일을 불러왔습니다.`;
+    uploadStatus.style.color = "var(--color-success)";
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+/* ----------------------------------------------------------
+   19. 커스텀 단어 적용 (프리미엄)
+   ---------------------------------------------------------- */
+function handleApplyCustomWords() {
+  const raw = customWordsInput.value.trim();
+
+  if (!raw) {
+    uploadStatus.textContent = "⚠ 단어를 입력하거나 파일을 업로드하세요.";
+    uploadStatus.style.color = "var(--color-error)";
+    return;
+  }
+
+  const words = raw
+    .split("\n")
+    .map(w => w.trim())
+    .filter(w => w.length > 0);
+
+  if (words.length < 5) {
+    uploadStatus.textContent = "⚠ 최소 5개 이상의 단어를 입력하세요.";
+    uploadStatus.style.color = "var(--color-error)";
+    return;
+  }
+
+  customWordList = words;
+  uploadStatus.textContent = `✓ ${words.length}개 단어가 적용되었습니다!`;
+  uploadStatus.style.color = "var(--color-success)";
+}
+
+/* ----------------------------------------------------------
+   20. 이벤트 등록
+   ---------------------------------------------------------- */
+startBtn.addEventListener("click", startGame);
+
+restartBtn.addEventListener("click", () => {
+  gameOverEl.classList.add("hidden");
+  startBtn.classList.remove("hidden");
+  difficultySection.classList.remove("hidden");
+  startGame();
+});
+
+wordInputEl.addEventListener("keydown", handleInput);
+wordInputEl.addEventListener("input", handleInput);
+wordInputEl.addEventListener("keydown", e => {
+  if (e.key === " ") e.preventDefault();
+});
+
+document.querySelector(".difficulty-buttons")
+  .addEventListener("click", handleDifficultyClick);
+
+document.getElementById("stripeBtn")
+  .addEventListener("click", handleStripePayment);
+
+document.getElementById("demoToggle")
+  .addEventListener("click", handleDemoToggle);
+
+fileUpload.addEventListener("change", handleFileUpload);
+applyCustomWords.addEventListener("click", handleApplyCustomWords);
+
+/* ----------------------------------------------------------
+   21. 시작
+   ---------------------------------------------------------- */
+init();
