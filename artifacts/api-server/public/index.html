@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>타자 연습 게임</title>
+  <link rel="stylesheet" href="/game/style.css" />
+</head>
+<body>
+
+  <!-- ===== 광고 배너 (상단) - 무료 사용자에게만 노출 ===== -->
+  <div class="ad-banner ad-top" id="adTop">
+    <span class="ad-label">광고</span>
+    <p>여기에 광고가 들어갑니다 (상단 배너)</p>
+  </div>
+
+  <!-- ===== 메인 컨테이너 ===== -->
+  <div class="container">
+
+    <!-- 헤더 영역: 프리미엄 배지 + 타이틀 -->
+    <header class="header">
+      <!-- 프리미엄 사용자일 때만 표시되는 배지 -->
+      <span class="premium-badge hidden" id="premiumBadge">✦ PREMIUM</span>
+      <h1 class="title">⌨️ 타자 연습</h1>
+      <p class="subtitle">얼마나 빠르게 입력할 수 있을까요?</p>
+    </header>
+
+    <!-- ===== 점수판: 남은 시간 / 점수 / 최고 점수 ===== -->
+    <div class="scoreboard">
+      <div class="score-item">
+        <span class="score-label">남은 시간</span>
+        <span class="score-value" id="timer">60</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">현재 점수</span>
+        <span class="score-value" id="score">0</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">최고 점수</span>
+        <span class="score-value" id="highScore">0</span>
+      </div>
+    </div>
+
+    <!-- ===== 난이도 선택 영역 ===== -->
+    <div class="difficulty-section" id="difficultySection">
+      <p class="difficulty-label">난이도 선택</p>
+      <div class="difficulty-buttons">
+        <button class="diff-btn active" data-level="easy">쉬움</button>
+        <button class="diff-btn" data-level="normal">보통</button>
+        <!-- Hard는 프리미엄 전용 -->
+        <button class="diff-btn premium-locked" data-level="hard" id="hardBtn">
+          어려움 🔒
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== 게임 화면 ===== -->
+    <div class="game-area">
+
+      <!-- 현재 표시 중인 단어 -->
+      <div class="word-display" id="wordDisplay">
+        <span id="currentWord">시작을 눌러주세요</span>
+      </div>
+
+      <!-- 사용자 입력창 -->
+      <input
+        type="text"
+        class="word-input"
+        id="wordInput"
+        placeholder="단어를 입력하세요..."
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        disabled
+      />
+
+      <!-- 입력 피드백 (정답/오답 표시) -->
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- ===== 게임 시작/종료 버튼 영역 ===== -->
+    <div class="action-buttons">
+      <button class="btn-start" id="startBtn">게임 시작</button>
+    </div>
+
+    <!-- ===== 게임 종료 화면 (기본 숨김) ===== -->
+    <div class="game-over-screen hidden" id="gameOverScreen">
+      <h2>게임 종료!</h2>
+      <p class="final-score-text">최종 점수: <strong id="finalScore">0</strong></p>
+      <p class="high-score-text" id="highScoreText"></p>
+
+      <!-- 프리미엄 사용자 전용 통계 -->
+      <div class="premium-stats hidden" id="premiumStats">
+        <h3>상세 통계 (프리미엄)</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">정확도</span>
+            <span class="stat-value" id="statAccuracy">0%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">총 시도</span>
+            <span class="stat-value" id="statTotal">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">분당 단어 수 (WPM)</span>
+            <span class="stat-value" id="statWPM">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">평균 타수 (CPM)</span>
+            <span class="stat-value" id="statCPM">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 다시 시작 버튼 -->
+      <button class="btn-start" id="restartBtn">다시 시작하기</button>
+    </div>
+
+    <!-- ===== 프리미엄 업그레이드 섹션 ===== -->
+    <div class="premium-section" id="premiumSection">
+      <div class="premium-card">
+        <h3>🚀 프리미엄으로 업그레이드</h3>
+        <ul class="premium-features">
+          <li>✅ 광고 완전 제거</li>
+          <li>✅ Hard 난이도 해금</li>
+          <li>✅ 상세 통계 (정확도, WPM, CPM)</li>
+          <li>✅ 커스텀 단어 리스트 업로드</li>
+        </ul>
+        <p class="premium-price">₩4,900 / 월</p>
+        <!-- Stripe 결제 버튼 - placeholder URL -->
+        <button class="btn-premium" id="stripeBtn">
+          💳 프리미엄 업그레이드
+        </button>
+        <!-- 테스트용: 프리미엄 토글 버튼 (실제 서비스에서는 제거) -->
+        <button class="btn-demo" id="demoToggle">
+          [데모] 프리미엄 토글
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== 커스텀 단어 업로드 (프리미엄 전용) ===== -->
+    <div class="custom-words-section hidden" id="customWordsSection">
+      <h3>커스텀 단어 리스트 업로드 (프리미엄)</h3>
+      <p class="upload-hint">한 줄에 하나씩 단어를 입력하거나 .txt 파일을 업로드하세요</p>
+      <textarea
+        class="custom-words-input"
+        id="customWordsInput"
+        placeholder="apple&#10;banana&#10;cherry&#10;..."
+        rows="5"
+      ></textarea>
+      <div class="upload-actions">
+        <input type="file" id="fileUpload" accept=".txt" class="file-input" />
+        <label for="fileUpload" class="btn-upload">파일 업로드</label>
+        <button class="btn-apply" id="applyCustomWords">적용하기</button>
+      </div>
+      <p class="upload-status" id="uploadStatus"></p>
+    </div>
+
+  </div><!-- /.container -->
+
+  <!-- ===== 광고 배너 (하단) - 무료 사용자에게만 노출 ===== -->
+  <div class="ad-banner ad-bottom" id="adBottom">
+    <span class="ad-label">광고</span>
+    <p>여기에 광고가 들어갑니다 (하단 배너)</p>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="/game/script.js"></script>
+</body>
+</html>
