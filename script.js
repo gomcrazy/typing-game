@@ -650,8 +650,19 @@ viewRankBtn.addEventListener("click", () => {
   updateWordSourceBadge();
   renderLeaderboard();
 });
-clearRankBtn.addEventListener("click", () => {
-  if (confirm("순위보드를 초기화할까요?")) { saveLeaderboardData([]); renderLeaderboard(); }
+clearRankBtn.addEventListener("click", async () => {
+  const key = window.prompt("🔑 관리자 키를 입력하세요:");
+  if (!key) return;
+  try {
+    const res = await fetch(API_BASE + "/api/words/suggestions", { headers: { "x-admin-key": key } });
+    if (res.ok) {
+      if (confirm("순위보드를 초기화할까요?")) { saveLeaderboardData([]); renderLeaderboard(); }
+    } else {
+      alert("⚠ 관리자 키가 올바르지 않습니다.");
+    }
+  } catch {
+    alert("⚠ 서버 연결 실패. 잠시 후 다시 시도해 주세요.");
+  }
 });
 
 /* 접기/펼치기 — 단어 제안 */
