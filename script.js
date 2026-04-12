@@ -44,18 +44,7 @@ const WORD_LIST = {
 const DIFF_LABEL = { easy: "쉬움", normal: "보통", hard: "어려움" };
 
 /* ----------------------------------------------------------
-   2. 토스페이먼츠 설정
-   ---------------------------------------------------------- */
-const TOSS_CLIENT_KEY  = "test_ck_eqRGgYO1r5AOpgeyGybnrQnN2Eya";
-const PAYMENT_AMOUNT   = 4900;
-const PAYMENT_NAME     = "타자 연습 프리미엄 월정액";
-
-function generateOrderId() {
-  return "order-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-}
-
-/* ----------------------------------------------------------
-   3. 게임 상태 변수
+   2. 게임 상태 변수
    ---------------------------------------------------------- */
 let currentWord       = "";
 let score             = 0;
@@ -63,7 +52,6 @@ let highScore         = 0;
 let timeLeft          = 60;
 let timerInterval     = null;
 let isGameRunning     = false;
-let isPremium         = false;
 let currentDifficulty = "easy";
 let totalAttempts     = 0;
 let correctAttempts   = 0;
@@ -72,7 +60,7 @@ let customWordList    = null;
 let finalScore        = 0;
 
 /* ----------------------------------------------------------
-   4. DOM 요소 캐싱
+   3. DOM 요소 캐싱
    ---------------------------------------------------------- */
 const timerEl            = document.getElementById("timer");
 const scoreEl            = document.getElementById("score");
@@ -85,11 +73,6 @@ const restartBtn         = document.getElementById("restartBtn");
 const gameOverEl         = document.getElementById("gameOverScreen");
 const finalScoreEl       = document.getElementById("finalScore");
 const highScoreTxtEl     = document.getElementById("highScoreText");
-const premiumBadge       = document.getElementById("premiumBadge");
-const premiumSection     = document.getElementById("premiumSection");
-const adTop              = document.getElementById("adTop");
-const adBottom           = document.getElementById("adBottom");
-const hardBtn            = document.getElementById("hardBtn");
 const customWordsSection = document.getElementById("customWordsSection");
 const premiumStatsEl     = document.getElementById("premiumStats");
 const difficultySection  = document.getElementById("difficultySection");
@@ -110,10 +93,9 @@ const rankSkipBtn        = document.getElementById("rankSkipBtn");
 const rankSavedMsgEl     = document.getElementById("rankSavedMsg");
 const viewRankBtn        = document.getElementById("viewRankBtn");
 const clearRankBtn       = document.getElementById("clearRankBtn");
-const paymentLoadingEl   = document.getElementById("paymentLoading");
 
 /* ----------------------------------------------------------
-   5. 페이지 전환
+   4. 페이지 전환
    ---------------------------------------------------------- */
 function showPage(page) {
   document.getElementById("mainPage").classList.add("hidden");
@@ -130,7 +112,7 @@ function showPage(page) {
 }
 
 /* ----------------------------------------------------------
-   6. 순위보드
+   5. 순위보드
    ---------------------------------------------------------- */
 function loadLeaderboard() {
   try { return JSON.parse(localStorage.getItem("typingLeaderboard") || "[]"); }
@@ -183,89 +165,19 @@ function submitToLeaderboard() {
 }
 
 /* ----------------------------------------------------------
-   7. 초기화
+   6. 초기화
    ---------------------------------------------------------- */
 function init() {
   highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
-  isPremium = localStorage.getItem("premium") === "true";
   highScoreEl.textContent = highScore;
-  updatePremiumUI();
-  checkPaymentResult();
   renderLeaderboard();
 }
 
 /* ----------------------------------------------------------
-   8. 토스페이먼츠 결제 결과 처리
-   ---------------------------------------------------------- */
-function checkPaymentResult() {
-  const params = new URLSearchParams(window.location.search);
-  const paymentKey = params.get("paymentKey");
-  const orderId    = params.get("orderId");
-  const amount     = params.get("amount");
-  const paymentFail = params.get("payment");
-
-  if (paymentKey && orderId && amount) {
-    window.history.replaceState({}, "", window.location.pathname);
-    paymentLoadingEl.classList.remove("hidden");
-
-    fetch("/api/payment/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentKey, orderId, amount: Number(amount) }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        paymentLoadingEl.classList.add("hidden");
-        if (data.success) {
-          localStorage.setItem("premium", "true");
-          isPremium = true;
-          updatePremiumUI();
-          alert("🎉 프리미엄 업그레이드 완료! 모든 기능이 해금되었습니다.");
-        } else {
-          alert("결제 확인 실패: " + (data.message || "알 수 없는 오류"));
-        }
-      })
-      .catch(() => {
-        paymentLoadingEl.classList.add("hidden");
-        alert("결제 확인 중 오류가 발생했습니다. 고객센터에 문의해 주세요.");
-      });
-    return;
-  }
-
-  if (paymentFail === "fail") {
-    window.history.replaceState({}, "", window.location.pathname);
-    alert("결제가 실패했거나 취소되었습니다.");
-  }
-}
-
-/* ----------------------------------------------------------
-   9. 프리미엄 UI 업데이트
-   ---------------------------------------------------------- */
-function updatePremiumUI() {
-  if (isPremium) {
-    adTop.classList.add("hidden");
-    adBottom.classList.add("hidden");
-    premiumBadge.classList.remove("hidden");
-    hardBtn.classList.add("unlocked");
-    hardBtn.textContent = "어려움 ⚡";
-    customWordsSection.classList.remove("hidden");
-    premiumSection.classList.add("hidden");
-  } else {
-    adTop.classList.remove("hidden");
-    adBottom.classList.remove("hidden");
-    premiumBadge.classList.add("hidden");
-    hardBtn.classList.remove("unlocked");
-    hardBtn.textContent = "어려움 🔒";
-    customWordsSection.classList.add("hidden");
-    premiumSection.classList.remove("hidden");
-  }
-}
-
-/* ----------------------------------------------------------
-   10. 랜덤 단어 선택
+   7. 랜덤 단어 선택
    ---------------------------------------------------------- */
 function getRandomWord() {
-  const list = (isPremium && customWordList && customWordList.length > 0)
+  const list = (customWordList && customWordList.length > 0)
     ? customWordList : WORD_LIST[currentDifficulty];
   let word;
   do { word = list[Math.floor(Math.random() * list.length)]; }
@@ -274,7 +186,7 @@ function getRandomWord() {
 }
 
 /* ----------------------------------------------------------
-   11. 새 단어 표시
+   8. 새 단어 표시
    ---------------------------------------------------------- */
 function showNewWord() {
   currentWord = getRandomWord();
@@ -285,7 +197,7 @@ function showNewWord() {
 }
 
 /* ----------------------------------------------------------
-   12. 게임 시작
+   9. 게임 시작
    ---------------------------------------------------------- */
 function startGame() {
   score = 0; timeLeft = 60;
@@ -311,7 +223,7 @@ function startGame() {
 }
 
 /* ----------------------------------------------------------
-   13. 타이머 tick
+   10. 타이머 tick
    ---------------------------------------------------------- */
 function tick() {
   timeLeft--;
@@ -321,7 +233,7 @@ function tick() {
 }
 
 /* ----------------------------------------------------------
-   14. 게임 종료
+   11. 게임 종료
    ---------------------------------------------------------- */
 function endGame() {
   clearInterval(timerInterval);
@@ -344,17 +256,13 @@ function endGame() {
     ? "🏆 새로운 최고 기록!"
     : `최고 기록: ${highScore}점`;
 
-  if (isPremium) {
-    const accuracy = totalAttempts > 0
-      ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
-    statAccuracy.textContent = `${accuracy}%`;
-    statTotal.textContent    = totalAttempts;
-    statWPM.textContent      = correctAttempts;
-    statCPM.textContent      = totalCharsTyped;
-    premiumStatsEl.classList.remove("hidden");
-  } else {
-    premiumStatsEl.classList.add("hidden");
-  }
+  const accuracy = totalAttempts > 0
+    ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
+  statAccuracy.textContent = `${accuracy}%`;
+  statTotal.textContent    = totalAttempts;
+  statWPM.textContent      = correctAttempts;
+  statCPM.textContent      = totalCharsTyped;
+  premiumStatsEl.classList.remove("hidden");
 
   nicknameInputEl.value = "";
   rankSubmitEl.classList.remove("hidden");
@@ -368,7 +276,7 @@ function endGame() {
 }
 
 /* ----------------------------------------------------------
-   15. 입력 처리
+   12. 입력 처리
    ---------------------------------------------------------- */
 function handleInput(e) {
   if (!isGameRunning) return;
@@ -384,7 +292,7 @@ function handleInput(e) {
 }
 
 /* ----------------------------------------------------------
-   16. 단어 제출
+   13. 단어 제출
    ---------------------------------------------------------- */
 function submitWord(typed) {
   if (!typed) return;
@@ -414,55 +322,18 @@ function submitWord(typed) {
 }
 
 /* ----------------------------------------------------------
-   17. 난이도 버튼
+   14. 난이도 버튼
    ---------------------------------------------------------- */
 function handleDifficultyClick(e) {
   const btn = e.target.closest(".diff-btn");
   if (!btn || isGameRunning) return;
-  const level = btn.dataset.level;
-  if (level === "hard" && !isPremium) {
-    alert("Hard 난이도는 프리미엄 전용 기능입니다.\n아래 '프리미엄 업그레이드' 버튼을 클릭하세요.");
-    return;
-  }
   document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  currentDifficulty = level;
+  currentDifficulty = btn.dataset.level;
 }
 
 /* ----------------------------------------------------------
-   18. 토스페이먼츠 결제
-   ---------------------------------------------------------- */
-async function handleTossPayment() {
-  try {
-    const tossPayments = TossPayments(TOSS_CLIENT_KEY);
-    const orderId = generateOrderId();
-    const baseUrl = window.location.origin + window.location.pathname;
-    await tossPayments.requestPayment("카드", {
-      amount: PAYMENT_AMOUNT,
-      orderId,
-      orderName: PAYMENT_NAME,
-      customerName: "고객",
-      successUrl: baseUrl,
-      failUrl: baseUrl + "?payment=fail",
-    });
-  } catch (err) {
-    if (err && err.code === "USER_CANCEL") return;
-    alert("결제 오류: " + (err && err.message ? err.message : "알 수 없는 오류"));
-  }
-}
-
-/* ----------------------------------------------------------
-   19. 데모 프리미엄 토글
-   ---------------------------------------------------------- */
-function handleDemoToggle() {
-  isPremium = !isPremium;
-  localStorage.setItem("premium", isPremium ? "true" : "false");
-  updatePremiumUI();
-  alert(isPremium ? "✨ [데모] 프리미엄 모드가 활성화되었습니다!" : "[데모] 프리미엄 모드가 비활성화되었습니다.");
-}
-
-/* ----------------------------------------------------------
-   20. 커스텀 단어
+   15. 커스텀 단어
    ---------------------------------------------------------- */
 function handleFileUpload(e) {
   const file = e.target.files[0];
@@ -494,7 +365,7 @@ function handleApplyCustomWords() {
 }
 
 /* ----------------------------------------------------------
-   21. 이벤트 등록
+   16. 이벤트 등록
    ---------------------------------------------------------- */
 startBtn.addEventListener("click", startGame);
 
@@ -511,8 +382,6 @@ wordInputEl.addEventListener("input", handleInput);
 wordInputEl.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault(); });
 
 document.querySelector(".difficulty-buttons").addEventListener("click", handleDifficultyClick);
-document.getElementById("tossBtn").addEventListener("click", handleTossPayment);
-document.getElementById("demoToggle").addEventListener("click", handleDemoToggle);
 fileUploadEl.addEventListener("change", handleFileUpload);
 applyCustomWordsEl.addEventListener("click", handleApplyCustomWords);
 
@@ -536,6 +405,6 @@ clearRankBtn.addEventListener("click", () => {
 });
 
 /* ----------------------------------------------------------
-   22. 시작
+   17. 시작
    ---------------------------------------------------------- */
 init();
