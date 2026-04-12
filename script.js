@@ -3,6 +3,18 @@
    ============================================================ */
 
 /* ----------------------------------------------------------
+   0. API 베이스 URL
+   gomcrazy.lol (GitHub Pages) 에서는 Replit 배포 서버로 요청
+   ---------------------------------------------------------- */
+const API_BASE = (function () {
+  const h = window.location.hostname;
+  if (h === "localhost" || h.endsWith("replit.dev") || h.endsWith("replit.app")) {
+    return "";
+  }
+  return "https://type-speed-master.replit.app";
+})();
+
+/* ----------------------------------------------------------
    1. 단어 데이터베이스
    ---------------------------------------------------------- */
 const WORD_LIST = {
@@ -254,7 +266,7 @@ function updateWordSourceBadge() {
   }
 }
 function loadServerWords() {
-  fetch("/api/words")
+  fetch(API_BASE + "/api/words")
     .then(r => r.json())
     .then(data => {
       if (Array.isArray(data.words) && data.words.length >= 5) {
@@ -421,7 +433,7 @@ async function handleSuggestSubmit() {
   if (words.length === 0) { setStatus(suggestStatus, "⚠ 단어를 입력하세요.", false); return; }
   suggestSubmitBtn.disabled = true;
   try {
-    const res = await fetch("/api/words/suggest", {
+    const res = await fetch(API_BASE + "/api/words/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ words }),
@@ -513,7 +525,7 @@ async function adminLoadSuggestions() {
   adminLoadBtn.disabled = true;
   setStatus(adminStatus, "", true);
   try {
-    const res = await fetch("/api/words/suggestions", { headers: { "x-admin-key": key } });
+    const res = await fetch(API_BASE + "/api/words/suggestions", { headers: { "x-admin-key": key } });
     const data = await res.json();
     if (res.ok && data.suggestions) {
       allSuggestions = data.suggestions;
@@ -532,7 +544,7 @@ async function handleApprove() {
   const key = adminKeyInput.value.trim();
   approveBtn.disabled = true;
   try {
-    const res = await fetch("/api/words/approve", {
+    const res = await fetch(API_BASE + "/api/words/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-admin-key": key },
       body: JSON.stringify({ ids: [...selectedIds] }),
@@ -550,7 +562,7 @@ async function handleClearSuggestions() {
   if (!confirm("제안 목록을 모두 삭제할까요?")) return;
   const key = adminKeyInput.value.trim();
   try {
-    const res = await fetch("/api/words/suggestions", { method: "DELETE", headers: { "x-admin-key": key } });
+    const res = await fetch(API_BASE + "/api/words/suggestions", { method: "DELETE", headers: { "x-admin-key": key } });
     const data = await res.json();
     if (res.ok && data.success) {
       allSuggestions = []; selectedIds.clear();
@@ -563,7 +575,7 @@ async function handleClearApproved() {
   if (!confirm("현재 적용 중인 공용 단어를 초기화하고 기본 단어로 되돌릴까요?")) return;
   const key = adminKeyInput.value.trim();
   try {
-    const res = await fetch("/api/words", { method: "DELETE", headers: { "x-admin-key": key } });
+    const res = await fetch(API_BASE + "/api/words", { method: "DELETE", headers: { "x-admin-key": key } });
     const data = await res.json();
     if (res.ok && data.success) {
       serverWordList = []; updateWordSourceBadge();
