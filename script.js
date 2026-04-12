@@ -4,9 +4,6 @@
 
 /* ----------------------------------------------------------
    1. 단어 데이터베이스
-      - easy  : 3~4글자 영어 / 2~3자 한글
-      - normal: 5~7글자 영어 / 4~6자 한글
-      - hard  : 8~12글자 영어 / 6~9자 한글 (프리미엄 전용)
    ---------------------------------------------------------- */
 const WORD_LIST = {
   easy: [
@@ -44,11 +41,10 @@ const WORD_LIST = {
   ]
 };
 
+const DIFF_LABEL = { easy: "쉬움", normal: "보통", hard: "어려움" };
+
 /* ----------------------------------------------------------
    2. Stripe 설정
-      실제 배포 시 Stripe 대시보드에서 Payment Link를 생성하고
-      아래 STRIPE_PAYMENT_LINK 값을 교체하세요.
-      결제 성공 후 ?payment=success 파라미터로 돌아옵니다.
    ---------------------------------------------------------- */
 const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/PLACEHOLDER_REPLACE_WITH_REAL_LINK";
 const SUCCESS_URL = `${window.location.origin}${window.location.pathname}?payment=success`;
@@ -57,54 +53,139 @@ const CANCEL_URL  = `${window.location.origin}${window.location.pathname}?paymen
 /* ----------------------------------------------------------
    3. 게임 상태 변수
    ---------------------------------------------------------- */
-let currentWord      = "";
-let score            = 0;
-let highScore        = 0;
-let timeLeft         = 60;
-let timerInterval    = null;
-let isGameRunning    = false;
-let isPremium        = false;
+let currentWord       = "";
+let score             = 0;
+let highScore         = 0;
+let timeLeft          = 60;
+let timerInterval     = null;
+let isGameRunning     = false;
+let isPremium         = false;
 let currentDifficulty = "easy";
-
-let totalAttempts    = 0;
-let correctAttempts  = 0;
-let totalCharsTyped  = 0;
-
-let customWordList   = null;
+let totalAttempts     = 0;
+let correctAttempts   = 0;
+let totalCharsTyped   = 0;
+let customWordList    = null;
+let finalScore        = 0;
 
 /* ----------------------------------------------------------
    4. DOM 요소 캐싱
    ---------------------------------------------------------- */
-const timerEl           = document.getElementById("timer");
-const scoreEl           = document.getElementById("score");
-const highScoreEl       = document.getElementById("highScore");
-const currentWordEl     = document.getElementById("currentWord");
-const wordInputEl       = document.getElementById("wordInput");
-const feedbackEl        = document.getElementById("feedback");
-const startBtn          = document.getElementById("startBtn");
-const restartBtn        = document.getElementById("restartBtn");
-const gameOverEl        = document.getElementById("gameOverScreen");
-const finalScoreEl      = document.getElementById("finalScore");
-const highScoreTxtEl    = document.getElementById("highScoreText");
-const premiumBadge      = document.getElementById("premiumBadge");
-const premiumSection    = document.getElementById("premiumSection");
-const adTop             = document.getElementById("adTop");
-const adBottom          = document.getElementById("adBottom");
-const hardBtn           = document.getElementById("hardBtn");
+const timerEl            = document.getElementById("timer");
+const scoreEl            = document.getElementById("score");
+const highScoreEl        = document.getElementById("highScore");
+const currentWordEl      = document.getElementById("currentWord");
+const wordInputEl        = document.getElementById("wordInput");
+const feedbackEl         = document.getElementById("feedback");
+const startBtn           = document.getElementById("startBtn");
+const restartBtn         = document.getElementById("restartBtn");
+const gameOverEl         = document.getElementById("gameOverScreen");
+const finalScoreEl       = document.getElementById("finalScore");
+const highScoreTxtEl     = document.getElementById("highScoreText");
+const premiumBadge       = document.getElementById("premiumBadge");
+const premiumSection     = document.getElementById("premiumSection");
+const adTop              = document.getElementById("adTop");
+const adBottom           = document.getElementById("adBottom");
+const hardBtn            = document.getElementById("hardBtn");
 const customWordsSection = document.getElementById("customWordsSection");
-const premiumStatsEl    = document.getElementById("premiumStats");
-const difficultySection = document.getElementById("difficultySection");
-const statAccuracy      = document.getElementById("statAccuracy");
-const statTotal         = document.getElementById("statTotal");
-const statWPM           = document.getElementById("statWPM");
-const statCPM           = document.getElementById("statCPM");
-const customWordsInput  = document.getElementById("customWordsInput");
-const fileUpload        = document.getElementById("fileUpload");
-const applyCustomWords  = document.getElementById("applyCustomWords");
-const uploadStatus      = document.getElementById("uploadStatus");
+const premiumStatsEl     = document.getElementById("premiumStats");
+const difficultySection  = document.getElementById("difficultySection");
+const statAccuracy       = document.getElementById("statAccuracy");
+const statTotal          = document.getElementById("statTotal");
+const statWPM            = document.getElementById("statWPM");
+const statCPM            = document.getElementById("statCPM");
+const customWordsInput   = document.getElementById("customWordsInput");
+const fileUploadEl       = document.getElementById("fileUpload");
+const applyCustomWords   = document.getElementById("applyCustomWords");
+const uploadStatus       = document.getElementById("uploadStatus");
+const leaderboardEl      = document.getElementById("leaderboard");
+const lbRowsEl           = document.getElementById("lbRows");
+const rankSubmitEl       = document.getElementById("rankSubmit");
+const nicknameInputEl    = document.getElementById("nicknameInput");
+const rankSaveBtn        = document.getElementById("rankSaveBtn");
+const rankSkipBtn        = document.getElementById("rankSkipBtn");
+const rankSavedMsgEl     = document.getElementById("rankSavedMsg");
+const viewRankBtn        = document.getElementById("viewRankBtn");
+const clearRankBtn       = document.getElementById("clearRankBtn");
 
 /* ----------------------------------------------------------
-   5. 초기화
+   5. 페이지 전환
+   ---------------------------------------------------------- */
+function showPage(page) {
+  document.getElementById("mainPage").classList.add("hidden");
+  document.getElementById("guidePage").classList.add("hidden");
+  document.getElementById("privacyPage").classList.add("hidden");
+
+  if (page === "guide")   document.getElementById("guidePage").classList.remove("hidden");
+  else if (page === "privacy") document.getElementById("privacyPage").classList.remove("hidden");
+  else {
+    document.getElementById("mainPage").classList.remove("hidden");
+    renderLeaderboard(); // 첫 화면으로 돌아올 때 순위보드 갱신
+  }
+  window.scrollTo(0, 0);
+}
+
+/* ----------------------------------------------------------
+   6. 순위보드
+   ---------------------------------------------------------- */
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem("typingLeaderboard") || "[]"); }
+  catch { return []; }
+}
+
+function saveLeaderboardData(entries) {
+  localStorage.setItem("typingLeaderboard", JSON.stringify(entries));
+}
+
+function renderLeaderboard() {
+  const entries = loadLeaderboard();
+  if (entries.length === 0) {
+    leaderboardEl.classList.add("hidden");
+    return;
+  }
+  leaderboardEl.classList.remove("hidden");
+  lbRowsEl.innerHTML = "";
+
+  entries.forEach((entry, i) => {
+    const row = document.createElement("div");
+    const medalClass = i === 0 ? "lb-gold" : i === 1 ? "lb-silver" : i === 2 ? "lb-bronze" : "";
+    row.className = "lb-row" + (medalClass ? " " + medalClass : "");
+    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : String(i + 1);
+    row.innerHTML = `
+      <span class="lb-rank">${medal}</span>
+      <span class="lb-nick">${escapeHtml(entry.nickname)}</span>
+      <span class="lb-diff">${DIFF_LABEL[entry.difficulty] || entry.difficulty}</span>
+      <span class="lb-score">${entry.score}</span>
+      <span class="lb-date">${entry.date}</span>
+    `;
+    lbRowsEl.appendChild(row);
+  });
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function submitToLeaderboard() {
+  const nick = nicknameInputEl.value.trim();
+  if (!nick) { nicknameInputEl.focus(); return; }
+
+  const entries = loadLeaderboard();
+  entries.push({
+    nickname: nick,
+    score: finalScore,
+    difficulty: currentDifficulty,
+    date: new Date().toLocaleDateString("ko-KR"),
+  });
+  entries.sort((a, b) => b.score - a.score);
+  const top10 = entries.slice(0, 10);
+  saveLeaderboardData(top10);
+
+  rankSubmitEl.classList.add("hidden");
+  rankSavedMsgEl.classList.remove("hidden");
+}
+
+/* ----------------------------------------------------------
+   7. 초기화
    ---------------------------------------------------------- */
 function init() {
   highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
@@ -112,15 +193,15 @@ function init() {
   highScoreEl.textContent = highScore;
   updatePremiumUI();
   checkPaymentResult();
+  renderLeaderboard();
 }
 
 /* ----------------------------------------------------------
-   6. Stripe 결제 결과 확인
+   8. Stripe 결제 결과 확인
    ---------------------------------------------------------- */
 function checkPaymentResult() {
   const params = new URLSearchParams(window.location.search);
   const payment = params.get("payment");
-
   if (payment === "success") {
     localStorage.setItem("premium", "true");
     isPremium = true;
@@ -134,7 +215,7 @@ function checkPaymentResult() {
 }
 
 /* ----------------------------------------------------------
-   7. 프리미엄 UI 업데이트
+   9. 프리미엄 UI 업데이트
    ---------------------------------------------------------- */
 function updatePremiumUI() {
   if (isPremium) {
@@ -157,23 +238,19 @@ function updatePremiumUI() {
 }
 
 /* ----------------------------------------------------------
-   8. 랜덤 단어 선택
+   10. 랜덤 단어 선택
    ---------------------------------------------------------- */
 function getRandomWord() {
   const list = (isPremium && customWordList && customWordList.length > 0)
-    ? customWordList
-    : WORD_LIST[currentDifficulty];
-
+    ? customWordList : WORD_LIST[currentDifficulty];
   let word;
-  do {
-    word = list[Math.floor(Math.random() * list.length)];
-  } while (word === currentWord && list.length > 1);
-
+  do { word = list[Math.floor(Math.random() * list.length)]; }
+  while (word === currentWord && list.length > 1);
   return word;
 }
 
 /* ----------------------------------------------------------
-   9. 새 단어 표시
+   11. 새 단어 표시
    ---------------------------------------------------------- */
 function showNewWord() {
   currentWord = getRandomWord();
@@ -184,14 +261,11 @@ function showNewWord() {
 }
 
 /* ----------------------------------------------------------
-   10. 게임 시작
+   12. 게임 시작
    ---------------------------------------------------------- */
 function startGame() {
-  score = 0;
-  timeLeft = 60;
-  totalAttempts = 0;
-  correctAttempts = 0;
-  totalCharsTyped = 0;
+  score = 0; timeLeft = 60;
+  totalAttempts = 0; correctAttempts = 0; totalCharsTyped = 0; finalScore = 0;
 
   scoreEl.textContent = "0";
   timerEl.textContent = "60";
@@ -203,6 +277,7 @@ function startGame() {
   wordInputEl.focus();
 
   gameOverEl.classList.add("hidden");
+  leaderboardEl.classList.add("hidden");
   startBtn.classList.add("hidden");
   difficultySection.classList.add("hidden");
 
@@ -212,23 +287,17 @@ function startGame() {
 }
 
 /* ----------------------------------------------------------
-   11. 타이머 tick
+   13. 타이머 tick
    ---------------------------------------------------------- */
 function tick() {
   timeLeft--;
   timerEl.textContent = timeLeft;
-
-  if (timeLeft <= 5) {
-    timerEl.classList.add("danger");
-  }
-
-  if (timeLeft <= 0) {
-    endGame();
-  }
+  if (timeLeft <= 5) timerEl.classList.add("danger");
+  if (timeLeft <= 0) endGame();
 }
 
 /* ----------------------------------------------------------
-   12. 게임 종료
+   14. 게임 종료
    ---------------------------------------------------------- */
 function endGame() {
   clearInterval(timerInterval);
@@ -238,22 +307,22 @@ function endGame() {
   wordInputEl.disabled = true;
   wordInputEl.value = "";
 
-  const isNewHighScore = score > highScore;
-  if (isNewHighScore) {
+  const isNewHigh = score > highScore;
+  if (isNewHigh) {
     highScore = score;
     localStorage.setItem("typingHighScore", String(highScore));
     highScoreEl.textContent = highScore;
   }
 
+  finalScore = score;
   finalScoreEl.textContent = score;
-  highScoreTxtEl.textContent = isNewHighScore
+  highScoreTxtEl.textContent = isNewHigh
     ? "🏆 새로운 최고 기록!"
     : `최고 기록: ${highScore}점`;
 
   if (isPremium) {
     const accuracy = totalAttempts > 0
-      ? Math.round((correctAttempts / totalAttempts) * 100)
-      : 0;
+      ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
     statAccuracy.textContent = `${accuracy}%`;
     statTotal.textContent    = totalAttempts;
     statWPM.textContent      = correctAttempts;
@@ -263,137 +332,112 @@ function endGame() {
     premiumStatsEl.classList.add("hidden");
   }
 
+  // 닉네임 입력 초기화
+  nicknameInputEl.value = "";
+  rankSubmitEl.classList.remove("hidden");
+  rankSavedMsgEl.classList.add("hidden");
+
   gameOverEl.classList.remove("hidden");
   startBtn.classList.add("hidden");
   difficultySection.classList.remove("hidden");
+
+  setTimeout(() => nicknameInputEl.focus(), 100);
 }
 
 /* ----------------------------------------------------------
-   13. 입력 처리
+   15. 입력 처리
    ---------------------------------------------------------- */
 function handleInput(e) {
   if (!isGameRunning) return;
-
   const typed = wordInputEl.value.trim();
-
   if (e.key === "Enter" || e.key === " ") {
     e.preventDefault();
     submitWord(typed);
     return;
   }
-
-  if (typed.length > 0) {
-    wordInputEl.style.borderColor = currentWord.startsWith(typed)
-      ? "var(--color-success)"
-      : "var(--color-error)";
-  } else {
-    wordInputEl.style.borderColor = "";
-  }
+  wordInputEl.style.borderColor = typed.length > 0
+    ? (currentWord.startsWith(typed) ? "var(--color-success)" : "var(--color-error)")
+    : "";
 }
 
 /* ----------------------------------------------------------
-   14. 단어 제출
+   16. 단어 제출
    ---------------------------------------------------------- */
 function submitWord(typed) {
   if (!typed) return;
-
   totalAttempts++;
-
   if (typed === currentWord) {
     correctAttempts++;
     totalCharsTyped += currentWord.length;
     score++;
     scoreEl.textContent = score;
-
     feedbackEl.textContent = "✓ 정답!";
     feedbackEl.className = "feedback correct";
-
-    const wordDisplay = document.querySelector(".word-display");
-    wordDisplay.classList.add("flash-correct");
-    setTimeout(() => wordDisplay.classList.remove("flash-correct"), 350);
-
+    const wd = document.querySelector(".word-display");
+    wd.classList.add("flash-correct");
+    setTimeout(() => wd.classList.remove("flash-correct"), 350);
     wordInputEl.value = "";
     wordInputEl.style.borderColor = "";
     showNewWord();
   } else {
     feedbackEl.textContent = "✗ 틀렸습니다";
     feedbackEl.className = "feedback wrong";
-
     wordInputEl.classList.add("shake-wrong");
     setTimeout(() => wordInputEl.classList.remove("shake-wrong"), 300);
-
     wordInputEl.value = "";
     wordInputEl.style.borderColor = "";
   }
-
-  setTimeout(() => {
-    feedbackEl.textContent = "";
-    feedbackEl.className = "feedback";
-  }, 700);
+  setTimeout(() => { feedbackEl.textContent = ""; feedbackEl.className = "feedback"; }, 700);
 }
 
 /* ----------------------------------------------------------
-   15. 난이도 버튼 처리
+   17. 난이도 버튼
    ---------------------------------------------------------- */
 function handleDifficultyClick(e) {
   const btn = e.target.closest(".diff-btn");
   if (!btn || isGameRunning) return;
-
   const level = btn.dataset.level;
-
   if (level === "hard" && !isPremium) {
     alert("Hard 난이도는 프리미엄 전용 기능입니다.\n아래 '프리미엄 업그레이드' 버튼을 클릭하세요.");
     return;
   }
-
   document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   currentDifficulty = level;
 }
 
 /* ----------------------------------------------------------
-   16. Stripe 결제 버튼
+   18. Stripe 결제
    ---------------------------------------------------------- */
 function handleStripePayment() {
   if (STRIPE_PAYMENT_LINK.includes("PLACEHOLDER")) {
-    alert(
-      "결제 시스템 안내\n\n" +
-      "Stripe 대시보드에서 Payment Link를 생성하고\n" +
-      "script.js의 STRIPE_PAYMENT_LINK 값을 교체하세요.\n\n" +
-      "[데모용] '프리미엄 토글' 버튼으로 기능을 체험해보세요."
-    );
+    alert("결제 시스템 안내\n\nStripe 대시보드에서 Payment Link를 생성하고\nscript.js의 STRIPE_PAYMENT_LINK 값을 교체하세요.\n\n[데모용] '프리미엄 토글' 버튼으로 기능을 체험해보세요.");
     return;
   }
-  const url = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(SUCCESS_URL)}&cancel_url=${encodeURIComponent(CANCEL_URL)}`;
-  window.location.href = url;
+  window.location.href = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(SUCCESS_URL)}&cancel_url=${encodeURIComponent(CANCEL_URL)}`;
 }
 
 /* ----------------------------------------------------------
-   17. 데모 프리미엄 토글 (배포 전 제거 권장)
+   19. 데모 프리미엄 토글
    ---------------------------------------------------------- */
 function handleDemoToggle() {
   isPremium = !isPremium;
   localStorage.setItem("premium", isPremium ? "true" : "false");
   updatePremiumUI();
-  alert(isPremium
-    ? "✨ [데모] 프리미엄 모드가 활성화되었습니다!"
-    : "[데모] 프리미엄 모드가 비활성화되었습니다."
-  );
+  alert(isPremium ? "✨ [데모] 프리미엄 모드가 활성화되었습니다!" : "[데모] 프리미엄 모드가 비활성화되었습니다.");
 }
 
 /* ----------------------------------------------------------
-   18. 커스텀 단어 파일 업로드 (프리미엄)
+   20. 커스텀 단어
    ---------------------------------------------------------- */
 function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-
   if (!file.name.endsWith(".txt")) {
     uploadStatus.textContent = "⚠ .txt 파일만 업로드 가능합니다.";
     uploadStatus.style.color = "var(--color-error)";
     return;
   }
-
   const reader = new FileReader();
   reader.onload = ev => {
     customWordsInput.value = ev.target.result;
@@ -403,36 +447,20 @@ function handleFileUpload(e) {
   reader.readAsText(file, "UTF-8");
 }
 
-/* ----------------------------------------------------------
-   19. 커스텀 단어 적용 (프리미엄)
-   ---------------------------------------------------------- */
 function handleApplyCustomWords() {
-  const raw = customWordsInput.value.trim();
-
-  if (!raw) {
-    uploadStatus.textContent = "⚠ 단어를 입력하거나 파일을 업로드하세요.";
-    uploadStatus.style.color = "var(--color-error)";
-    return;
-  }
-
-  const words = raw
-    .split("\n")
-    .map(w => w.trim())
-    .filter(w => w.length > 0);
-
+  const words = customWordsInput.value.trim().split("\n").map(w => w.trim()).filter(w => w.length > 0);
   if (words.length < 5) {
     uploadStatus.textContent = "⚠ 최소 5개 이상의 단어를 입력하세요.";
     uploadStatus.style.color = "var(--color-error)";
     return;
   }
-
   customWordList = words;
   uploadStatus.textContent = `✓ ${words.length}개 단어가 적용되었습니다!`;
   uploadStatus.style.color = "var(--color-success)";
 }
 
 /* ----------------------------------------------------------
-   20. 이벤트 등록
+   21. 이벤트 등록
    ---------------------------------------------------------- */
 startBtn.addEventListener("click", startGame);
 
@@ -440,28 +468,41 @@ restartBtn.addEventListener("click", () => {
   gameOverEl.classList.add("hidden");
   startBtn.classList.remove("hidden");
   difficultySection.classList.remove("hidden");
+  renderLeaderboard();
   startGame();
 });
 
 wordInputEl.addEventListener("keydown", handleInput);
 wordInputEl.addEventListener("input", handleInput);
-wordInputEl.addEventListener("keydown", e => {
-  if (e.key === " ") e.preventDefault();
-});
+wordInputEl.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault(); });
 
-document.querySelector(".difficulty-buttons")
-  .addEventListener("click", handleDifficultyClick);
-
-document.getElementById("stripeBtn")
-  .addEventListener("click", handleStripePayment);
-
-document.getElementById("demoToggle")
-  .addEventListener("click", handleDemoToggle);
-
-fileUpload.addEventListener("change", handleFileUpload);
+document.querySelector(".difficulty-buttons").addEventListener("click", handleDifficultyClick);
+document.getElementById("stripeBtn").addEventListener("click", handleStripePayment);
+document.getElementById("demoToggle").addEventListener("click", handleDemoToggle);
+fileUploadEl.addEventListener("change", handleFileUpload);
 applyCustomWords.addEventListener("click", handleApplyCustomWords);
 
+// 순위보드
+rankSaveBtn.addEventListener("click", submitToLeaderboard);
+nicknameInputEl.addEventListener("keydown", e => { if (e.key === "Enter") submitToLeaderboard(); });
+rankSkipBtn.addEventListener("click", () => {
+  gameOverEl.classList.add("hidden");
+  startBtn.classList.remove("hidden");
+  renderLeaderboard();
+});
+viewRankBtn.addEventListener("click", () => {
+  gameOverEl.classList.add("hidden");
+  startBtn.classList.remove("hidden");
+  renderLeaderboard();
+});
+clearRankBtn.addEventListener("click", () => {
+  if (confirm("순위보드를 초기화할까요?")) {
+    saveLeaderboardData([]);
+    renderLeaderboard();
+  }
+});
+
 /* ----------------------------------------------------------
-   21. 시작
+   22. 시작
    ---------------------------------------------------------- */
 init();
