@@ -5,8 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>타자 연습 게임</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://js.tosspayments.com/v1"></script>
 </head>
 <body>
+
+  <!-- 결제 로딩 오버레이 -->
+  <div class="payment-loading hidden" id="paymentLoading">
+    <div class="payment-loading-box">
+      <p>결제 확인 중...</p>
+    </div>
+  </div>
 
   <!-- ===========================
        게임 메인 페이지
@@ -151,7 +159,7 @@
             <li>✅ 커스텀 단어 리스트 업로드</li>
           </ul>
           <p class="premium-price">₩4,900 / 월</p>
-          <button class="btn-premium" id="stripeBtn">💳 프리미엄 업그레이드</button>
+          <button class="btn-premium" id="tossBtn">💳 프리미엄 업그레이드 (토스페이)</button>
           <button class="btn-demo" id="demoToggle">[데모] 프리미엄 토글</button>
         </div>
       </div>
@@ -316,7 +324,7 @@
 
       <section class="info-section">
         <h2>5. 결제 정보</h2>
-        <p>프리미엄 결제는 <strong>Stripe</strong>를 통해 처리됩니다. 결제 정보는 본 서비스에서 직접 처리하지 않으며, Stripe의 보안 결제 시스템을 통해 안전하게 처리됩니다. Stripe 개인정보 처리방침: <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" class="info-link">stripe.com/privacy</a></p>
+        <p>프리미엄 결제는 <strong>토스페이먼츠(TossPayments)</strong>를 통해 처리됩니다. 결제 정보는 본 서비스에서 직접 처리하지 않으며, 토스페이먼츠의 보안 결제 시스템을 통해 안전하게 처리됩니다. 토스페이먼츠 개인정보 처리방침: <a href="https://www.tosspayments.com/privacy" target="_blank" rel="noopener noreferrer" class="info-link">tosspayments.com/privacy</a></p>
       </section>
 
       <section class="info-section">
