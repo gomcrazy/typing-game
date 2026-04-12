@@ -24,7 +24,14 @@ const WORD_LIST = {
     "eye", "sky", "sea", "car", "bus", "fan", "bag", "bed",
     "ice", "egg", "ant", "bee", "fox", "owl", "cow", "hen",
     "사과", "바나나", "고양이", "강아지", "하늘", "바다", "나무",
-    "꽃", "별", "달", "해", "비", "눈", "불", "물", "집"
+    "꽃", "별", "달", "해", "비", "눈", "불", "물", "집",
+    // +50
+    "jam", "tin", "lip", "rib", "hip", "web", "net", "log", "rod", "pin",
+    "bin", "mud", "oak", "ark", "elm", "ash", "hub", "jet", "jug", "keg",
+    "lab", "lap", "lid", "mop", "nap",
+    "길", "산", "강", "밥", "책", "문", "손", "발", "입", "귀",
+    "코", "빛", "숲", "땅", "봄", "새", "구름", "돌", "풀", "바람",
+    "여름", "하루", "파도", "나비", "오리"
   ],
   normal: [
     "apple", "brain", "cloud", "dance", "eagle", "flame", "grape",
@@ -35,7 +42,17 @@ const WORD_LIST = {
     "monkey", "nugget", "orange",
     "컴퓨터", "키보드", "마우스", "프린터", "모니터", "스마트폰",
     "자동차", "비행기", "기차역", "도서관", "영화관", "수영장",
-    "피자가게", "커피숍", "편의점", "약국"
+    "피자가게", "커피숍", "편의점", "약국",
+    // +50
+    "amber", "blade", "charm", "depot", "ember", "frost", "globe",
+    "hedge", "ivory", "joker", "karma", "lunar", "model", "noble",
+    "orbit", "pixel", "quest", "rival", "scout", "solar",
+    "track", "valor", "vapor", "waltz", "youth",
+    "노트북", "초콜릿", "건강관리", "음악감상", "여행계획",
+    "생일파티", "봄소풍", "여름휴가", "가을단풍", "겨울방학",
+    "친구관계", "한국음식", "아이스크림", "도시생활", "방학여행",
+    "공부하기", "운동하기", "책읽기", "영화보기", "요리하기",
+    "사진찍기", "노래듣기", "게임하기", "산책하기", "동네카페"
   ],
   hard: [
     "adventure", "beautiful", "celebrate", "dangerous", "efficient",
@@ -48,7 +65,18 @@ const WORD_LIST = {
     "nutrition", "objective", "questions", "reference", "technical",
     "인공지능", "빅데이터", "사물인터넷", "클라우드컴퓨팅",
     "프로그래밍", "알고리즘", "데이터베이스", "머신러닝",
-    "딥러닝기술", "블록체인", "메타버스", "가상현실"
+    "딥러닝기술", "블록체인", "메타버스", "가상현실",
+    // +50
+    "accomplish", "community", "completely", "dedicated", "essential",
+    "frequency", "guarantee", "hurricane", "implement", "landscape",
+    "mechanism", "operation", "otherwise", "potential", "principle",
+    "prototype", "recommend", "regarding", "residence", "sensitive",
+    "situation", "something", "together", "training", "ultimate",
+    "정보통신기술", "오픈소스코드", "신재생에너지", "인공지능기술", "클라우드서비스",
+    "빅데이터분석", "사이버보안위협", "증강현실기술", "자율주행자동차", "스마트홈시스템",
+    "디지털마케팅", "환경보호운동", "우주항공기술", "나노기술혁신", "양자컴퓨팅기술",
+    "로봇공학기술", "전자상거래플랫폼", "스마트팩토리", "핀테크서비스", "바이오기술혁신",
+    "딥러닝알고리즘", "소셜네트워크서비스", "친환경에너지기술", "사이버공격방어", "데이터프라이버시"
   ]
 };
 
