@@ -1296,3 +1296,200 @@ body {
 
 /* hidden 유틸 */
 .hidden { display: none !important; }
+
+/* ============================================================
+   모바일/기기 대응 추가 스타일
+   ============================================================ */
+
+/* 헤더 배지 영역 */
+.header-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* 기기 배지 */
+.device-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+.device-badge.device-mobile {
+  background: rgba(99,202,183,0.08);
+  border-color: rgba(99,202,183,0.35);
+  color: #63cab7;
+}
+.device-badge.device-desktop {
+  background: rgba(108,99,255,0.08);
+  border-color: rgba(108,99,255,0.35);
+  color: var(--color-primary);
+}
+
+/* 접기/펼치기 패널 */
+.collapsible-panel {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.collapsible-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background-color: var(--color-surface);
+  border: none;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+  min-height: 52px;
+}
+.collapsible-toggle:hover { background-color: var(--color-surface-2); }
+.toggle-arrow { font-size: 0.72rem; opacity: 0.6; flex-shrink: 0; }
+
+.collapsible-body {
+  padding: 16px 18px;
+  background-color: var(--color-surface-2);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+.collapsible-body.hidden { display: none; }
+
+.admin-panel { border-style: dashed; }
+.admin-toggle-btn { color: var(--color-text-muted); font-size: 0.88rem; }
+.admin-desc { font-size: 0.84rem; color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+
+/* 전체 너비 버튼 */
+.btn-full { width: 100%; }
+
+/* 모바일 힌트 텍스트 */
+.mobile-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+.mobile-hint.mobile-hint-active { color: var(--color-success); }
+
+/* ============================================================
+   모바일 body 클래스 오버라이드 (body.mobile)
+   ============================================================ */
+body.mobile .container { padding: 14px 14px 36px; gap: 18px; }
+body.mobile .title { font-size: 1.8rem; }
+body.mobile .subtitle { display: none; }
+body.mobile .scoreboard { gap: 8px; }
+body.mobile .score-item { padding: 12px 8px; }
+body.mobile .score-value { font-size: 1.6rem; }
+body.mobile .score-label { font-size: 0.66rem; }
+
+/* 단어 디스플레이 — 탭 가능 영역 */
+body.mobile .word-display {
+  padding: 30px 16px;
+  min-height: 110px;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+}
+body.mobile #currentWord { font-size: 2.4rem; }
+
+/* 입력창 크게 */
+body.mobile .word-input {
+  font-size: 1.15rem;
+  padding: 16px 16px;
+  min-height: 56px;
+}
+
+/* 시작 버튼 전체 너비 */
+body.mobile .btn-start {
+  width: 100%;
+  padding: 18px 24px;
+  font-size: 1.1rem;
+}
+
+/* 난이도 버튼 격자 */
+body.mobile .difficulty-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+body.mobile .diff-btn {
+  padding: 14px 4px;
+  font-size: 0.88rem;
+  min-height: 52px;
+}
+
+/* 통계 2열 */
+body.mobile .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+body.mobile .stat-item { padding: 12px 10px; }
+body.mobile .stat-value { font-size: 1.5rem; }
+body.mobile .stat-label { font-size: 0.7rem; }
+
+/* 순위보드 날짜 숨김 */
+body.mobile .lb-date { display: none; }
+body.mobile .lb-table { font-size: 0.85rem; }
+
+/* 닉네임 입력 */
+body.mobile .nickname-input { min-height: 50px; font-size: 1rem; }
+body.mobile .btn-rank-save { min-height: 50px; font-size: 0.95rem; }
+
+/* 접기/펼치기 */
+body.mobile .collapsible-toggle { padding: 16px 16px; font-size: 0.88rem; }
+body.mobile .collapsible-body { padding: 14px 14px; }
+body.mobile .custom-words-input { font-size: 1rem; }
+body.mobile .suggestion-chip { padding: 8px 12px; font-size: 0.88rem; }
+
+/* ============================================================
+   반응형 — 소형 모바일 (≤480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .container { padding: 14px 12px 36px; gap: 16px; }
+  .title { font-size: 1.6rem; }
+  .scoreboard { gap: 6px; }
+  .score-item { padding: 10px 6px; }
+  .score-value { font-size: 1.4rem; }
+  .score-label { font-size: 0.62rem; }
+  #currentWord { font-size: 2rem; }
+  .word-display { padding: 24px 12px; min-height: 90px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .btn-start { width: 100%; padding: 16px 24px; font-size: 1rem; }
+  .lb-date { display: none; }
+  .upload-actions { flex-direction: column; }
+  .upload-actions .btn-clear-rank { width: 100%; }
+  .collapsible-toggle { font-size: 0.84rem; padding: 14px 14px; }
+  .info-diff-cards { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   반응형 — 가로 모드 (landscape, 높이 ≤500px)
+   ============================================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .container { padding: 10px 14px 20px; gap: 10px; }
+  .header { flex-direction: row; align-items: center; justify-content: center; gap: 12px; }
+  .title { font-size: 1.4rem; }
+  .subtitle { display: none; }
+  .scoreboard { gap: 8px; }
+  .score-item { padding: 8px 6px; }
+  .score-value { font-size: 1.2rem; }
+  .word-display { padding: 18px 12px; min-height: 80px; }
+  #currentWord { font-size: 1.8rem; }
+  .word-input { padding: 12px 14px; font-size: 1rem; }
+  .difficulty-section { display: none; }
+  .btn-start { padding: 14px 24px; }
+}
