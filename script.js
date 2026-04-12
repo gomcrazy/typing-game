@@ -44,11 +44,15 @@ const WORD_LIST = {
 const DIFF_LABEL = { easy: "쉬움", normal: "보통", hard: "어려움" };
 
 /* ----------------------------------------------------------
-   2. Stripe 설정
+   2. 토스페이먼츠 설정
    ---------------------------------------------------------- */
-const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/PLACEHOLDER_REPLACE_WITH_REAL_LINK";
-const SUCCESS_URL = `${window.location.origin}${window.location.pathname}?payment=success`;
-const CANCEL_URL  = `${window.location.origin}${window.location.pathname}?payment=cancel`;
+const TOSS_CLIENT_KEY  = "test_ck_eqRGgYO1r5AOpgeyGybnrQnN2Eya";
+const PAYMENT_AMOUNT   = 4900;
+const PAYMENT_NAME     = "타자 연습 프리미엄 월정액";
+
+function generateOrderId() {
+  return "order-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+}
 
 /* ----------------------------------------------------------
    3. 게임 상태 변수
@@ -95,7 +99,7 @@ const statWPM            = document.getElementById("statWPM");
 const statCPM            = document.getElementById("statCPM");
 const customWordsInput   = document.getElementById("customWordsInput");
 const fileUploadEl       = document.getElementById("fileUpload");
-const applyCustomWords   = document.getElementById("applyCustomWords");
+const applyCustomWordsEl = document.getElementById("applyCustomWords");
 const uploadStatus       = document.getElementById("uploadStatus");
 const leaderboardEl      = document.getElementById("leaderboard");
 const lbRowsEl           = document.getElementById("lbRows");
@@ -106,6 +110,7 @@ const rankSkipBtn        = document.getElementById("rankSkipBtn");
 const rankSavedMsgEl     = document.getElementById("rankSavedMsg");
 const viewRankBtn        = document.getElementById("viewRankBtn");
 const clearRankBtn       = document.getElementById("clearRankBtn");
+const paymentLoadingEl   = document.getElementById("paymentLoading");
 
 /* ----------------------------------------------------------
    5. 페이지 전환
@@ -115,11 +120,11 @@ function showPage(page) {
   document.getElementById("guidePage").classList.add("hidden");
   document.getElementById("privacyPage").classList.add("hidden");
 
-  if (page === "guide")   document.getElementById("guidePage").classList.remove("hidden");
+  if (page === "guide")        document.getElementById("guidePage").classList.remove("hidden");
   else if (page === "privacy") document.getElementById("privacyPage").classList.remove("hidden");
   else {
     document.getElementById("mainPage").classList.remove("hidden");
-    renderLeaderboard(); // 첫 화면으로 돌아올 때 순위보드 갱신
+    renderLeaderboard();
   }
   window.scrollTo(0, 0);
 }
@@ -138,13 +143,9 @@ function saveLeaderboardData(entries) {
 
 function renderLeaderboard() {
   const entries = loadLeaderboard();
-  if (entries.length === 0) {
-    leaderboardEl.classList.add("hidden");
-    return;
-  }
+  if (entries.length === 0) { leaderboardEl.classList.add("hidden"); return; }
   leaderboardEl.classList.remove("hidden");
   lbRowsEl.innerHTML = "";
-
   entries.forEach((entry, i) => {
     const row = document.createElement("div");
     const medalClass = i === 0 ? "lb-gold" : i === 1 ? "lb-silver" : i === 2 ? "lb-bronze" : "";
@@ -168,7 +169,6 @@ function escapeHtml(str) {
 function submitToLeaderboard() {
   const nick = nicknameInputEl.value.trim();
   if (!nick) { nicknameInputEl.focus(); return; }
-
   const entries = loadLeaderboard();
   entries.push({
     nickname: nick,
@@ -177,9 +177,7 @@ function submitToLeaderboard() {
     date: new Date().toLocaleDateString("ko-KR"),
   });
   entries.sort((a, b) => b.score - a.score);
-  const top10 = entries.slice(0, 10);
-  saveLeaderboardData(top10);
-
+  saveLeaderboardData(entries.slice(0, 10));
   rankSubmitEl.classList.add("hidden");
   rankSavedMsgEl.classList.remove("hidden");
 }
@@ -197,20 +195,46 @@ function init() {
 }
 
 /* ----------------------------------------------------------
-   8. Stripe 결제 결과 확인
+   8. 토스페이먼츠 결제 결과 처리
    ---------------------------------------------------------- */
 function checkPaymentResult() {
   const params = new URLSearchParams(window.location.search);
-  const payment = params.get("payment");
-  if (payment === "success") {
-    localStorage.setItem("premium", "true");
-    isPremium = true;
-    updatePremiumUI();
-    alert("🎉 프리미엄 업그레이드 완료! 모든 기능이 해금되었습니다.");
+  const paymentKey = params.get("paymentKey");
+  const orderId    = params.get("orderId");
+  const amount     = params.get("amount");
+  const paymentFail = params.get("payment");
+
+  if (paymentKey && orderId && amount) {
     window.history.replaceState({}, "", window.location.pathname);
-  } else if (payment === "cancel") {
-    alert("결제가 취소되었습니다.");
+    paymentLoadingEl.classList.remove("hidden");
+
+    fetch("/api/payment/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentKey, orderId, amount: Number(amount) }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        paymentLoadingEl.classList.add("hidden");
+        if (data.success) {
+          localStorage.setItem("premium", "true");
+          isPremium = true;
+          updatePremiumUI();
+          alert("🎉 프리미엄 업그레이드 완료! 모든 기능이 해금되었습니다.");
+        } else {
+          alert("결제 확인 실패: " + (data.message || "알 수 없는 오류"));
+        }
+      })
+      .catch(() => {
+        paymentLoadingEl.classList.add("hidden");
+        alert("결제 확인 중 오류가 발생했습니다. 고객센터에 문의해 주세요.");
+      });
+    return;
+  }
+
+  if (paymentFail === "fail") {
     window.history.replaceState({}, "", window.location.pathname);
+    alert("결제가 실패했거나 취소되었습니다.");
   }
 }
 
@@ -332,7 +356,6 @@ function endGame() {
     premiumStatsEl.classList.add("hidden");
   }
 
-  // 닉네임 입력 초기화
   nicknameInputEl.value = "";
   rankSubmitEl.classList.remove("hidden");
   rankSavedMsgEl.classList.add("hidden");
@@ -407,14 +430,25 @@ function handleDifficultyClick(e) {
 }
 
 /* ----------------------------------------------------------
-   18. Stripe 결제
+   18. 토스페이먼츠 결제
    ---------------------------------------------------------- */
-function handleStripePayment() {
-  if (STRIPE_PAYMENT_LINK.includes("PLACEHOLDER")) {
-    alert("결제 시스템 안내\n\nStripe 대시보드에서 Payment Link를 생성하고\nscript.js의 STRIPE_PAYMENT_LINK 값을 교체하세요.\n\n[데모용] '프리미엄 토글' 버튼으로 기능을 체험해보세요.");
-    return;
+async function handleTossPayment() {
+  try {
+    const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+    const orderId = generateOrderId();
+    const baseUrl = window.location.origin + window.location.pathname;
+    await tossPayments.requestPayment("카드", {
+      amount: PAYMENT_AMOUNT,
+      orderId,
+      orderName: PAYMENT_NAME,
+      customerName: "고객",
+      successUrl: baseUrl,
+      failUrl: baseUrl + "?payment=fail",
+    });
+  } catch (err) {
+    if (err && err.code === "USER_CANCEL") return;
+    alert("결제 오류: " + (err && err.message ? err.message : "알 수 없는 오류"));
   }
-  window.location.href = `${STRIPE_PAYMENT_LINK}?success_url=${encodeURIComponent(SUCCESS_URL)}&cancel_url=${encodeURIComponent(CANCEL_URL)}`;
 }
 
 /* ----------------------------------------------------------
@@ -477,12 +511,11 @@ wordInputEl.addEventListener("input", handleInput);
 wordInputEl.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault(); });
 
 document.querySelector(".difficulty-buttons").addEventListener("click", handleDifficultyClick);
-document.getElementById("stripeBtn").addEventListener("click", handleStripePayment);
+document.getElementById("tossBtn").addEventListener("click", handleTossPayment);
 document.getElementById("demoToggle").addEventListener("click", handleDemoToggle);
 fileUploadEl.addEventListener("change", handleFileUpload);
-applyCustomWords.addEventListener("click", handleApplyCustomWords);
+applyCustomWordsEl.addEventListener("click", handleApplyCustomWords);
 
-// 순위보드
 rankSaveBtn.addEventListener("click", submitToLeaderboard);
 nicknameInputEl.addEventListener("keydown", e => { if (e.key === "Enter") submitToLeaderboard(); });
 rankSkipBtn.addEventListener("click", () => {
