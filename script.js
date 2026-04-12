@@ -61,7 +61,51 @@ function detectDifficulty(word) {
 }
 
 /* ----------------------------------------------------------
-   3. 게임 상태 변수
+   3. 기기 감지
+   ---------------------------------------------------------- */
+function detectDevice() {
+  const touch = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+  const narrow = window.innerWidth <= 768;
+  return touch && narrow ? "mobile" : "desktop";
+}
+
+let currentDevice = detectDevice();
+
+function applyDevice() {
+  currentDevice = detectDevice();
+  const isMobile = currentDevice === "mobile";
+  const body = document.body;
+
+  if (isMobile) {
+    body.classList.add("mobile");
+    body.classList.remove("desktop");
+  } else {
+    body.classList.add("desktop");
+    body.classList.remove("mobile");
+  }
+
+  /* 배지 & 힌트 업데이트 */
+  const badge = document.getElementById("deviceBadge");
+  if (badge) {
+    badge.textContent = isMobile ? "📱 모바일" : "🖥 PC";
+    badge.className = "device-badge device-" + currentDevice;
+  }
+
+  const subtitle = document.getElementById("subtitle");
+  if (subtitle) subtitle.style.display = isMobile ? "none" : "";
+
+  /* 입력창 placeholder 조정 */
+  if (wordInputEl) {
+    wordInputEl.placeholder = isGameRunning
+      ? (isMobile ? "여기에 입력하고 Enter..." : "단어를 입력하고 Enter 또는 Space...")
+      : "단어를 입력하세요...";
+  }
+}
+
+window.addEventListener("resize", applyDevice);
+
+/* ----------------------------------------------------------
+   4. 게임 상태 변수
    ---------------------------------------------------------- */
 let currentWord       = "";
 let score             = 0;
@@ -74,64 +118,69 @@ let totalAttempts     = 0;
 let correctAttempts   = 0;
 let totalCharsTyped   = 0;
 let finalScore        = 0;
-let serverWordList    = [];  // 관리자 승인 공용 단어
+let serverWordList    = [];
 
 /* ----------------------------------------------------------
-   4. DOM 요소 캐싱
+   5. DOM 요소 캐싱
    ---------------------------------------------------------- */
-const timerEl            = document.getElementById("timer");
-const scoreEl            = document.getElementById("score");
-const highScoreEl        = document.getElementById("highScore");
-const currentWordEl      = document.getElementById("currentWord");
-const wordInputEl        = document.getElementById("wordInput");
-const feedbackEl         = document.getElementById("feedback");
-const startBtn           = document.getElementById("startBtn");
-const restartBtn         = document.getElementById("restartBtn");
-const gameOverEl         = document.getElementById("gameOverScreen");
-const finalScoreEl       = document.getElementById("finalScore");
-const highScoreTxtEl     = document.getElementById("highScoreText");
-const premiumStatsEl     = document.getElementById("premiumStats");
-const difficultySection  = document.getElementById("difficultySection");
-const statAccuracy       = document.getElementById("statAccuracy");
-const statTotal          = document.getElementById("statTotal");
-const statWPM            = document.getElementById("statWPM");
-const statCPM            = document.getElementById("statCPM");
-const leaderboardEl      = document.getElementById("leaderboard");
-const lbRowsEl           = document.getElementById("lbRows");
-const rankSubmitEl       = document.getElementById("rankSubmit");
-const nicknameInputEl    = document.getElementById("nicknameInput");
-const rankSaveBtn        = document.getElementById("rankSaveBtn");
-const rankSkipBtn        = document.getElementById("rankSkipBtn");
-const rankSavedMsgEl     = document.getElementById("rankSavedMsg");
-const viewRankBtn        = document.getElementById("viewRankBtn");
-const clearRankBtn       = document.getElementById("clearRankBtn");
-const wordSourceBadge    = document.getElementById("wordSourceBadge");
+const timerEl             = document.getElementById("timer");
+const scoreEl             = document.getElementById("score");
+const highScoreEl         = document.getElementById("highScore");
+const currentWordEl       = document.getElementById("currentWord");
+const wordDisplayEl       = document.getElementById("wordDisplay");
+const wordInputEl         = document.getElementById("wordInput");
+const feedbackEl          = document.getElementById("feedback");
+const startBtn            = document.getElementById("startBtn");
+const restartBtn          = document.getElementById("restartBtn");
+const gameOverEl          = document.getElementById("gameOverScreen");
+const finalScoreEl        = document.getElementById("finalScore");
+const highScoreTxtEl      = document.getElementById("highScoreText");
+const premiumStatsEl      = document.getElementById("premiumStats");
+const difficultySection   = document.getElementById("difficultySection");
+const statAccuracy        = document.getElementById("statAccuracy");
+const statTotal           = document.getElementById("statTotal");
+const statWPM             = document.getElementById("statWPM");
+const statCPM             = document.getElementById("statCPM");
+const leaderboardEl       = document.getElementById("leaderboard");
+const lbRowsEl            = document.getElementById("lbRows");
+const rankSubmitEl        = document.getElementById("rankSubmit");
+const nicknameInputEl     = document.getElementById("nicknameInput");
+const rankSaveBtn         = document.getElementById("rankSaveBtn");
+const rankSkipBtn         = document.getElementById("rankSkipBtn");
+const rankSavedMsgEl      = document.getElementById("rankSavedMsg");
+const viewRankBtn         = document.getElementById("viewRankBtn");
+const clearRankBtn        = document.getElementById("clearRankBtn");
+const wordSourceBadge     = document.getElementById("wordSourceBadge");
+const mobileHint          = document.getElementById("mobileHint");
 
 /* 제안 관련 */
-const suggestInput       = document.getElementById("suggestInput");
-const suggestSubmitBtn   = document.getElementById("suggestSubmitBtn");
-const suggestStatus      = document.getElementById("suggestStatus");
+const suggestToggleBtn    = document.getElementById("suggestToggleBtn");
+const suggestArrow        = document.getElementById("suggestArrow");
+const suggestBody         = document.getElementById("suggestBody");
+const suggestInput        = document.getElementById("suggestInput");
+const suggestSubmitBtn    = document.getElementById("suggestSubmitBtn");
+const suggestStatus       = document.getElementById("suggestStatus");
 
 /* 관리자 관련 */
-const adminToggleBtn     = document.getElementById("adminToggleBtn");
-const adminArrow         = document.getElementById("adminArrow");
-const adminBody          = document.getElementById("adminBody");
-const adminKeyInput      = document.getElementById("adminKeyInput");
-const adminLoadBtn       = document.getElementById("adminLoadBtn");
+const adminToggleBtn      = document.getElementById("adminToggleBtn");
+const adminArrow          = document.getElementById("adminArrow");
+const adminBody           = document.getElementById("adminBody");
+const adminKeyInput       = document.getElementById("adminKeyInput");
+const adminLoadBtn        = document.getElementById("adminLoadBtn");
 const adminSuggestionsArea = document.getElementById("adminSuggestionsArea");
-const suggestionStats    = document.getElementById("suggestionStats");
-const selectAllCheck     = document.getElementById("selectAllCheck");
-const selectAllLabel     = document.getElementById("selectAllLabel");
-const suggestionList     = document.getElementById("suggestionList");
-const approveSummary     = document.getElementById("approveSummary");
-const approveCountText   = document.getElementById("approveCountText");
-const approveBtn         = document.getElementById("approveBtn");
+const suggestionStats     = document.getElementById("suggestionStats");
+const selectAllCheck      = document.getElementById("selectAllCheck");
+const selectAllLabel      = document.getElementById("selectAllLabel");
+const suggestionList      = document.getElementById("suggestionList");
+const approveSummary      = document.getElementById("approveSummary");
+const approveCountText    = document.getElementById("approveCountText");
+const approveBtn          = document.getElementById("approveBtn");
 const clearSuggestionsBtn = document.getElementById("clearSuggestionsBtn");
-const clearApprovedBtn   = document.getElementById("clearApprovedBtn");
-const adminStatus        = document.getElementById("adminStatus");
+const clearApprovedBtn    = document.getElementById("clearApprovedBtn");
+const adminStatus         = document.getElementById("adminStatus");
 
 /* ----------------------------------------------------------
-   5. 페이지 전환
+   6. 페이지 전환
    ---------------------------------------------------------- */
 function showPage(page) {
   document.getElementById("mainPage").classList.add("hidden");
@@ -144,7 +193,7 @@ function showPage(page) {
 }
 
 /* ----------------------------------------------------------
-   6. 순위보드
+   7. 순위보드
    ---------------------------------------------------------- */
 function loadLeaderboard() {
   try { return JSON.parse(localStorage.getItem("typingLeaderboard") || "[]"); }
@@ -180,11 +229,8 @@ function submitToLeaderboard() {
   const nick = nicknameInputEl.value.trim();
   if (!nick) { nicknameInputEl.focus(); return; }
   const entries = loadLeaderboard();
-  entries.push({
-    nickname: nick, score: finalScore,
-    difficulty: currentDifficulty,
-    date: new Date().toLocaleDateString("ko-KR"),
-  });
+  entries.push({ nickname: nick, score: finalScore, difficulty: currentDifficulty,
+    date: new Date().toLocaleDateString("ko-KR") });
   entries.sort((a, b) => b.score - a.score);
   saveLeaderboardData(entries.slice(0, 10));
   rankSubmitEl.classList.add("hidden");
@@ -192,7 +238,7 @@ function submitToLeaderboard() {
 }
 
 /* ----------------------------------------------------------
-   7. 서버 공용 단어 로드
+   8. 서버 공용 단어 로드
    ---------------------------------------------------------- */
 function updateWordSourceBadge() {
   if (serverWordList.length >= 5) {
@@ -205,7 +251,6 @@ function updateWordSourceBadge() {
     if (!isGameRunning) difficultySection.classList.remove("hidden");
   }
 }
-
 function loadServerWords() {
   fetch("/api/words")
     .then(r => r.json())
@@ -219,17 +264,18 @@ function loadServerWords() {
 }
 
 /* ----------------------------------------------------------
-   8. 초기화
+   9. 초기화
    ---------------------------------------------------------- */
 function init() {
   highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
   highScoreEl.textContent = highScore;
+  applyDevice();
   renderLeaderboard();
   loadServerWords();
 }
 
 /* ----------------------------------------------------------
-   9. 단어 선택
+   10. 단어 선택
    ---------------------------------------------------------- */
 function getActiveList() {
   return serverWordList.length >= 5 ? serverWordList : WORD_LIST[currentDifficulty];
@@ -247,10 +293,12 @@ function showNewWord() {
   currentWordEl.classList.remove("word-anim");
   void currentWordEl.offsetWidth;
   currentWordEl.classList.add("word-anim");
+  /* 모바일: 단어 바뀔 때 input 포커스 유지 */
+  if (currentDevice === "mobile") setTimeout(() => wordInputEl.focus(), 50);
 }
 
 /* ----------------------------------------------------------
-   10. 게임 시작 / tick / 종료
+   11. 게임 시작 / tick / 종료
    ---------------------------------------------------------- */
 function startGame() {
   score = 0; timeLeft = 60;
@@ -259,13 +307,24 @@ function startGame() {
   timerEl.textContent = "60";
   timerEl.classList.remove("danger");
   feedbackEl.textContent = ""; feedbackEl.className = "feedback";
-  wordInputEl.value = ""; wordInputEl.disabled = false; wordInputEl.focus();
+  wordInputEl.value = ""; wordInputEl.disabled = false;
+  wordInputEl.placeholder = currentDevice === "mobile"
+    ? "여기에 입력하고 Enter..."
+    : "단어를 입력하고 Enter 또는 Space...";
   gameOverEl.classList.add("hidden");
   leaderboardEl.classList.add("hidden");
   startBtn.classList.add("hidden");
   difficultySection.classList.add("hidden");
   isGameRunning = true;
+
+  /* 모바일 힌트 표시 */
+  if (mobileHint) {
+    if (currentDevice === "mobile") mobileHint.classList.remove("hidden");
+    else mobileHint.classList.add("hidden");
+  }
+
   showNewWord();
+  setTimeout(() => wordInputEl.focus(), 80);
   timerInterval = setInterval(tick, 1000);
 }
 function tick() {
@@ -277,6 +336,7 @@ function tick() {
 function endGame() {
   clearInterval(timerInterval); timerInterval = null; isGameRunning = false;
   wordInputEl.disabled = true; wordInputEl.value = "";
+  if (mobileHint) mobileHint.classList.add("hidden");
   const isNewHigh = score > highScore;
   if (isNewHigh) { highScore = score; localStorage.setItem("typingHighScore", String(highScore)); highScoreEl.textContent = highScore; }
   finalScore = score;
@@ -298,7 +358,7 @@ function endGame() {
 }
 
 /* ----------------------------------------------------------
-   11. 입력 처리
+   12. 입력 처리
    ---------------------------------------------------------- */
 function handleInput(e) {
   if (!isGameRunning) return;
@@ -311,9 +371,8 @@ function handleInput(e) {
       correctAttempts++; totalCharsTyped += currentWord.length; score++;
       scoreEl.textContent = score;
       feedbackEl.textContent = "✓ 정답!"; feedbackEl.className = "feedback correct";
-      const wd = document.querySelector(".word-display");
-      wd.classList.add("flash-correct");
-      setTimeout(() => wd.classList.remove("flash-correct"), 350);
+      wordDisplayEl.classList.add("flash-correct");
+      setTimeout(() => wordDisplayEl.classList.remove("flash-correct"), 350);
       wordInputEl.value = ""; wordInputEl.style.borderColor = "";
       showNewWord();
     } else {
@@ -330,7 +389,7 @@ function handleInput(e) {
 }
 
 /* ----------------------------------------------------------
-   12. 난이도 버튼
+   13. 난이도 버튼
    ---------------------------------------------------------- */
 function handleDifficultyClick(e) {
   const btn = e.target.closest(".diff-btn");
@@ -341,7 +400,14 @@ function handleDifficultyClick(e) {
 }
 
 /* ----------------------------------------------------------
-   13. 단어 제안 (사용자)
+   14. 단어 디스플레이 탭 (모바일: 포커스 이동)
+   ---------------------------------------------------------- */
+function handleWordDisplayTap() {
+  if (isGameRunning) wordInputEl.focus();
+}
+
+/* ----------------------------------------------------------
+   15. 단어 제안 (사용자)
    ---------------------------------------------------------- */
 function setStatus(el, msg, ok) {
   el.textContent = msg;
@@ -349,8 +415,7 @@ function setStatus(el, msg, ok) {
 }
 
 async function handleSuggestSubmit() {
-  const raw = suggestInput.value;
-  const words = raw.split(/[\n,]+/).map(w => w.trim()).filter(w => w.length > 0);
+  const words = suggestInput.value.split(/[\n,]+/).map(w => w.trim()).filter(w => w.length > 0);
   if (words.length === 0) { setStatus(suggestStatus, "⚠ 단어를 입력하세요.", false); return; }
   suggestSubmitBtn.disabled = true;
   try {
@@ -364,15 +429,13 @@ async function handleSuggestSubmit() {
       const dup = data.duplicates ? ` (이미 있는 단어 ${data.duplicates}개 제외)` : "";
       setStatus(suggestStatus, `✅ ${data.added}개 단어를 제안했습니다!${dup}`, true);
       suggestInput.value = "";
-    } else {
-      setStatus(suggestStatus, `⚠ ${data.error || "제안 실패"}`, false);
-    }
+    } else { setStatus(suggestStatus, `⚠ ${data.error || "제안 실패"}`, false); }
   } catch { setStatus(suggestStatus, "⚠ 서버 연결 실패", false); }
   finally { suggestSubmitBtn.disabled = false; }
 }
 
 /* ----------------------------------------------------------
-   14. 관리자 패널
+   16. 관리자 패널
    ---------------------------------------------------------- */
 let allSuggestions = [];
 let selectedIds = new Set();
@@ -380,15 +443,12 @@ let selectedIds = new Set();
 function renderSuggestions() {
   const counts = { easy: 0, normal: 0, hard: 0 };
   allSuggestions.forEach(s => counts[s.difficulty]++);
-
   suggestionStats.innerHTML =
     `전체 ${allSuggestions.length}개 &nbsp;·&nbsp; ` +
     `${DIFF_EMOJI.easy} 쉬움 ${counts.easy} &nbsp; ` +
     `${DIFF_EMOJI.normal} 보통 ${counts.normal} &nbsp; ` +
     `${DIFF_EMOJI.hard} 어려움 ${counts.hard}`;
-
   updateSelectAllLabel();
-
   suggestionList.innerHTML = "";
   ["easy", "normal", "hard"].forEach(diff => {
     const group = allSuggestions.filter(s => s.difficulty === diff);
@@ -414,16 +474,12 @@ function renderSuggestions() {
     groupEl.appendChild(chips);
     suggestionList.appendChild(groupEl);
   });
-
   updateApproveSummary();
 }
-
 function updateSelectAllLabel() {
-  const allSelected = selectedIds.size === allSuggestions.length;
-  selectAllCheck.checked = allSelected;
+  selectAllCheck.checked = selectedIds.size === allSuggestions.length;
   selectAllLabel.textContent = `전체 선택 (${selectedIds.size}/${allSuggestions.length})`;
 }
-
 function updateApproveSummary() {
   if (selectedIds.size === 0) { approveSummary.classList.add("hidden"); return; }
   approveSummary.classList.remove("hidden");
@@ -434,7 +490,6 @@ function updateApproveSummary() {
     `선택: ${selectedIds.size}개  (${DIFF_EMOJI.easy}${sc.easy}  ${DIFF_EMOJI.normal}${sc.normal}  ${DIFF_EMOJI.hard}${sc.hard})`;
   approveBtn.textContent = `✅ 선택한 ${selectedIds.size}개 전체 적용`;
 }
-
 selectAllCheck.addEventListener("change", () => {
   if (selectAllCheck.checked) {
     allSuggestions.forEach(s => selectedIds.add(s.id));
@@ -447,13 +502,7 @@ selectAllCheck.addEventListener("change", () => {
       c.classList.remove("chip-checked"); c.querySelector("input").checked = false;
     });
   }
-  updateSelectAllLabel();
-  updateApproveSummary();
-});
-
-adminToggleBtn.addEventListener("click", () => {
-  const hidden = adminBody.classList.toggle("hidden");
-  adminArrow.textContent = hidden ? "▼" : "▲";
+  updateSelectAllLabel(); updateApproveSummary();
 });
 
 async function adminLoadSuggestions() {
@@ -472,13 +521,10 @@ async function adminLoadSuggestions() {
       if (allSuggestions.length === 0) {
         suggestionList.innerHTML = `<p style="text-align:center;padding:16px 0;color:var(--color-text-muted)">아직 제안된 단어가 없습니다.</p>`;
       }
-    } else {
-      setStatus(adminStatus, `⚠ ${data.error || "불러오기 실패"}`, false);
-    }
+    } else { setStatus(adminStatus, `⚠ ${data.error || "불러오기 실패"}`, false); }
   } catch { setStatus(adminStatus, "⚠ 서버 연결 실패", false); }
   finally { adminLoadBtn.disabled = false; }
 }
-
 async function handleApprove() {
   if (selectedIds.size === 0) { setStatus(adminStatus, "⚠ 적용할 단어를 선택하세요.", false); return; }
   const key = adminKeyInput.value.trim();
@@ -494,13 +540,10 @@ async function handleApprove() {
       setStatus(adminStatus, `✅ ${data.count}개 단어가 전체 사용자에게 즉시 적용됐습니다!`, true);
       serverWordList = data.words;
       updateWordSourceBadge();
-    } else {
-      setStatus(adminStatus, `⚠ ${data.error || "적용 실패"}`, false);
-    }
+    } else { setStatus(adminStatus, `⚠ ${data.error || "적용 실패"}`, false); }
   } catch { setStatus(adminStatus, "⚠ 서버 연결 실패", false); }
   finally { approveBtn.disabled = false; }
 }
-
 async function handleClearSuggestions() {
   if (!confirm("제안 목록을 모두 삭제할까요?")) return;
   const key = adminKeyInput.value.trim();
@@ -514,7 +557,6 @@ async function handleClearSuggestions() {
     } else { setStatus(adminStatus, `⚠ ${data.error || "삭제 실패"}`, false); }
   } catch { setStatus(adminStatus, "⚠ 서버 연결 실패", false); }
 }
-
 async function handleClearApproved() {
   if (!confirm("현재 적용 중인 공용 단어를 초기화하고 기본 단어로 되돌릴까요?")) return;
   const key = adminKeyInput.value.trim();
@@ -522,15 +564,14 @@ async function handleClearApproved() {
     const res = await fetch("/api/words", { method: "DELETE", headers: { "x-admin-key": key } });
     const data = await res.json();
     if (res.ok && data.success) {
-      serverWordList = [];
-      updateWordSourceBadge();
+      serverWordList = []; updateWordSourceBadge();
       setStatus(adminStatus, "✅ 공용 단어가 초기화됐습니다. 기본 단어를 사용합니다.", true);
     } else { setStatus(adminStatus, `⚠ ${data.error || "초기화 실패"}`, false); }
   } catch { setStatus(adminStatus, "⚠ 서버 연결 실패", false); }
 }
 
 /* ----------------------------------------------------------
-   15. 이벤트 등록
+   17. 이벤트 등록
    ---------------------------------------------------------- */
 startBtn.addEventListener("click", startGame);
 restartBtn.addEventListener("click", () => {
@@ -543,6 +584,14 @@ restartBtn.addEventListener("click", () => {
 wordInputEl.addEventListener("keydown", handleInput);
 wordInputEl.addEventListener("input", handleInput);
 wordInputEl.addEventListener("keydown", e => { if (e.key === " ") e.preventDefault(); });
+wordInputEl.addEventListener("focus", () => {
+  if (mobileHint && isGameRunning) mobileHint.classList.add("mobile-hint-active");
+});
+wordInputEl.addEventListener("blur", () => {
+  if (mobileHint) mobileHint.classList.remove("mobile-hint-active");
+});
+wordDisplayEl.addEventListener("click", handleWordDisplayTap);
+
 document.querySelector(".difficulty-buttons").addEventListener("click", handleDifficultyClick);
 
 rankSaveBtn.addEventListener("click", submitToLeaderboard);
@@ -563,7 +612,18 @@ clearRankBtn.addEventListener("click", () => {
   if (confirm("순위보드를 초기화할까요?")) { saveLeaderboardData([]); renderLeaderboard(); }
 });
 
+/* 접기/펼치기 — 단어 제안 */
+suggestToggleBtn.addEventListener("click", () => {
+  const hidden = suggestBody.classList.toggle("hidden");
+  suggestArrow.textContent = hidden ? "▼" : "▲";
+});
 suggestSubmitBtn.addEventListener("click", handleSuggestSubmit);
+
+/* 접기/펼치기 — 관리자 */
+adminToggleBtn.addEventListener("click", () => {
+  const hidden = adminBody.classList.toggle("hidden");
+  adminArrow.textContent = hidden ? "▼" : "▲";
+});
 adminLoadBtn.addEventListener("click", adminLoadSuggestions);
 adminKeyInput.addEventListener("keydown", e => { if (e.key === "Enter") adminLoadSuggestions(); });
 approveBtn.addEventListener("click", handleApprove);
@@ -571,6 +631,6 @@ clearSuggestionsBtn.addEventListener("click", handleClearSuggestions);
 clearApprovedBtn.addEventListener("click", handleClearApproved);
 
 /* ----------------------------------------------------------
-   16. 시작
+   18. 시작
    ---------------------------------------------------------- */
 init();
