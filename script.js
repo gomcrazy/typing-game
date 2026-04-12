@@ -186,8 +186,10 @@ function showPage(page) {
   document.getElementById("mainPage").classList.add("hidden");
   document.getElementById("guidePage").classList.add("hidden");
   document.getElementById("privacyPage").classList.add("hidden");
-  if (page === "guide")        document.getElementById("guidePage").classList.remove("hidden");
-  else if (page === "privacy") document.getElementById("privacyPage").classList.remove("hidden");
+  document.getElementById("updatelogPage").classList.add("hidden");
+  if (page === "guide")           document.getElementById("guidePage").classList.remove("hidden");
+  else if (page === "privacy")    document.getElementById("privacyPage").classList.remove("hidden");
+  else if (page === "updatelog")  document.getElementById("updatelogPage").classList.remove("hidden");
   else { document.getElementById("mainPage").classList.remove("hidden"); renderLeaderboard(); }
   window.scrollTo(0, 0);
 }
