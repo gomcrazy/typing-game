@@ -243,9 +243,12 @@ function escapeHtml(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 function renderLeaderboardData(entries) {
-  if (!entries || entries.length === 0) { leaderboardEl.classList.add("hidden"); return; }
   leaderboardEl.classList.remove("hidden");
   lbRowsEl.innerHTML = "";
+  if (!entries || entries.length === 0) {
+    lbRowsEl.innerHTML = '<p class="lb-empty">아직 등록된 순위가 없습니다.<br>첫 번째 도전자가 되어보세요!</p>';
+    return;
+  }
   entries.forEach((entry, i) => {
     const row = document.createElement("div");
     const medalClass = i === 0 ? "lb-gold" : i === 1 ? "lb-silver" : i === 2 ? "lb-bronze" : "";
@@ -266,7 +269,7 @@ async function renderLeaderboard() {
     const res = await fetch(API_BASE + "/api/leaderboard");
     const data = await res.json();
     renderLeaderboardData(data.leaderboard || []);
-  } catch { leaderboardEl.classList.add("hidden"); }
+  } catch { renderLeaderboardData([]); }
 }
 async function submitToLeaderboard() {
   const nick = nicknameInputEl.value.trim();
