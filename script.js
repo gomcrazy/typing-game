@@ -158,6 +158,8 @@ let totalAttempts     = 0;
 let correctAttempts   = 0;
 let totalCharsTyped   = 0;
 let finalScore        = 0;
+let lastWpm           = 0;
+let lastAccuracy      = 0;
 let serverWordList    = [];
 
 /* ----------------------------------------------------------
@@ -237,19 +239,11 @@ function showPage(page) {
 /* ----------------------------------------------------------
    7. 순위보드
    ---------------------------------------------------------- */
-function loadLeaderboard() {
-  try { return JSON.parse(localStorage.getItem("typingLeaderboard") || "[]"); }
-  catch { return []; }
-}
-function saveLeaderboardData(entries) {
-  localStorage.setItem("typingLeaderboard", JSON.stringify(entries));
-}
 function escapeHtml(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
-function renderLeaderboard() {
-  const entries = loadLeaderboard();
-  if (entries.length === 0) { leaderboardEl.classList.add("hidden"); return; }
+function renderLeaderboardData(entries) {
+  if (!entries || entries.length === 0) { leaderboardEl.classList.add("hidden"); return; }
   leaderboardEl.classList.remove("hidden");
   lbRowsEl.innerHTML = "";
   entries.forEach((entry, i) => {
@@ -267,14 +261,26 @@ function renderLeaderboard() {
     lbRowsEl.appendChild(row);
   });
 }
-function submitToLeaderboard() {
+async function renderLeaderboard() {
+  try {
+    const res = await fetch(API_BASE + "/api/leaderboard");
+    const data = await res.json();
+    renderLeaderboardData(data.leaderboard || []);
+  } catch { leaderboardEl.classList.add("hidden"); }
+}
+async function submitToLeaderboard() {
   const nick = nicknameInputEl.value.trim();
   if (!nick) { nicknameInputEl.focus(); return; }
-  const entries = loadLeaderboard();
-  entries.push({ nickname: nick, score: finalScore, difficulty: currentDifficulty,
-    date: new Date().toLocaleDateString("ko-KR") });
-  entries.sort((a, b) => b.score - a.score);
-  saveLeaderboardData(entries.slice(0, 10));
+  try {
+    await fetch(API_BASE + "/api/leaderboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nickname: nick, score: finalScore, difficulty: currentDifficulty,
+        wpm: lastWpm || 0, accuracy: lastAccuracy || 0 }),
+    });
+    renderLeaderboardData([]);
+    await renderLeaderboard();
+  } catch {}
   rankSubmitEl.classList.add("hidden");
   rankSavedMsgEl.classList.remove("hidden");
 }
@@ -385,6 +391,8 @@ function endGame() {
   finalScoreEl.textContent = score;
   highScoreTxtEl.textContent = isNewHigh ? "🏆 새로운 최고 기록!" : `최고 기록: ${highScore}점`;
   const accuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
+  lastAccuracy = accuracy;
+  lastWpm = correctAttempts;
   statAccuracy.textContent = `${accuracy}%`;
   statTotal.textContent = totalAttempts;
   statWPM.textContent = correctAttempts;
@@ -653,13 +661,14 @@ viewRankBtn.addEventListener("click", () => {
 clearRankBtn.addEventListener("click", async () => {
   const key = window.prompt("🔑 관리자 키를 입력하세요:");
   if (!key) return;
+  if (!confirm("순위보드를 초기화할까요?")) return;
   try {
-    const res = await fetch(API_BASE + "/api/words/suggestions", { headers: { "x-admin-key": key } });
-    if (res.ok) {
-      if (confirm("순위보드를 초기화할까요?")) { saveLeaderboardData([]); renderLeaderboard(); }
-    } else {
-      alert("⚠ 관리자 키가 올바르지 않습니다.");
-    }
+    const res = await fetch(API_BASE + "/api/leaderboard", {
+      method: "DELETE",
+      headers: { "x-admin-key": key },
+    });
+    if (res.ok) { renderLeaderboardData([]); leaderboardEl.classList.add("hidden"); }
+    else { alert("⚠ 관리자 키가 올바르지 않습니다."); }
   } catch {
     alert("⚠ 서버 연결 실패. 잠시 후 다시 시도해 주세요.");
   }
