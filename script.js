@@ -225,14 +225,24 @@ const adminStatus         = document.getElementById("adminStatus");
    6. 페이지 전환
    ---------------------------------------------------------- */
 function showPage(page) {
+  // 타자 게임 진행 중 다른 페이지로 이동 시 타이머 정지
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; isGameRunning = false; }
+  // 기억력 게임 타이머 정지
+  if (typeof memPreviewTmr !== "undefined" && memPreviewTmr)  { clearInterval(memPreviewTmr); memPreviewTmr = null; }
+  if (typeof memElapsedTmr !== "undefined" && memElapsedTmr)  { clearInterval(memElapsedTmr); memElapsedTmr = null; }
+
+  document.getElementById("homePage").classList.add("hidden");
   document.getElementById("mainPage").classList.add("hidden");
   document.getElementById("guidePage").classList.add("hidden");
   document.getElementById("privacyPage").classList.add("hidden");
   document.getElementById("updatelogPage").classList.add("hidden");
+  document.getElementById("memoryPage").classList.add("hidden");
   if (page === "guide")           document.getElementById("guidePage").classList.remove("hidden");
   else if (page === "privacy")    document.getElementById("privacyPage").classList.remove("hidden");
   else if (page === "updatelog")  document.getElementById("updatelogPage").classList.remove("hidden");
-  else { document.getElementById("mainPage").classList.remove("hidden"); renderLeaderboard(); }
+  else if (page === "memory")     { document.getElementById("memoryPage").classList.remove("hidden"); memRenderLeaderboard(); }
+  else if (page === "main")       { document.getElementById("mainPage").classList.remove("hidden"); renderLeaderboard(); }
+  else                            document.getElementById("homePage").classList.remove("hidden");
   window.scrollTo(0, 0);
 }
 
@@ -266,7 +276,7 @@ function renderLeaderboardData(entries) {
 }
 async function renderLeaderboard() {
   try {
-    const res = await fetch(API_BASE + "/api/leaderboard");
+    const res = await fetch(API_BASE + "/api/leaderboard?game=typing");
     const data = await res.json();
     renderLeaderboardData(data.leaderboard || []);
   } catch { renderLeaderboardData([]); }
@@ -278,7 +288,7 @@ async function submitToLeaderboard() {
     await fetch(API_BASE + "/api/leaderboard", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nickname: nick, score: finalScore, difficulty: currentDifficulty,
+      body: JSON.stringify({ game: "typing", nickname: nick, score: finalScore, difficulty: currentDifficulty,
         wpm: lastWpm || 0, accuracy: lastAccuracy || 0 }),
     });
     renderLeaderboardData([]);
@@ -666,7 +676,7 @@ clearRankBtn.addEventListener("click", async () => {
   if (!key) return;
   if (!confirm("순위보드를 초기화할까요?")) return;
   try {
-    const res = await fetch(API_BASE + "/api/leaderboard", {
+    const res = await fetch(API_BASE + "/api/leaderboard?game=typing", {
       method: "DELETE",
       headers: { "x-admin-key": key },
     });
@@ -696,6 +706,243 @@ clearSuggestionsBtn.addEventListener("click", handleClearSuggestions);
 clearApprovedBtn.addEventListener("click", handleClearApproved);
 
 /* ----------------------------------------------------------
-   18. 시작
+   18. 기억력 카드 게임
+   ---------------------------------------------------------- */
+const MEM_CARD_SETS = {
+  easy:   ["🍎","🍌","🍇","🍓","🍊","🍋"],
+  normal: ["🍎","🍌","🍇","🍓","🍊","🍋","🐱","🐶"],
+  hard:   ["🍎","🍌","🍇","🍓","🍊","🍋","🐱","🐶","🐼","🦊"],
+};
+const MEM_DIFF_LABEL = { easy: "쉬움 (6쌍)", normal: "보통 (8쌍)", hard: "어려움 (10쌍)" };
+const MEM_GRID_COLS  = { easy: 4, normal: 4, hard: 5 };
+
+let memDifficulty  = "normal";
+let memCards       = [];
+let memSelected    = [];
+let memMoves       = 0;
+let memMatched     = 0;
+let memStartTime   = 0;
+let memElapsedMs   = 0;
+let memIsChecking  = false;
+let memPreviewTmr  = null;
+let memElapsedTmr  = null;
+
+function memShuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function memFormatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}분 ${s % 60}초` : `${s}초`;
+}
+
+/* 순위보드 렌더 */
+async function memRenderLeaderboard() {
+  const rowsEl = document.getElementById("memLbRows");
+  rowsEl.innerHTML = '<p style="text-align:center;color:#475569;padding:12px 0">불러오는 중...</p>';
+  try {
+    const res  = await fetch(API_BASE + "/api/leaderboard?game=memory");
+    const data = await res.json();
+    const list = data.leaderboard || [];
+    if (list.length === 0) {
+      rowsEl.innerHTML = '<p style="text-align:center;color:#475569;padding:14px 0">아직 등록된 순위가 없습니다.<br>첫 번째 도전자가 되어보세요!</p>';
+      return;
+    }
+    const medals = ["🥇","🥈","🥉"];
+    rowsEl.innerHTML = list.slice(0, 20).map((e, i) => `
+      <div class="mem-lb-row${i===0?" mem-lb-gold":i===1?" mem-lb-silver":i===2?" mem-lb-bronze":""}">
+        <span class="mem-lb-rank">${medals[i] || i+1}</span>
+        <span class="mem-lb-nick">${e.nickname}</span>
+        <span class="mem-lb-diff">${MEM_DIFF_LABEL[e.difficulty] || e.difficulty}</span>
+        <span class="mem-lb-moves">${e.moves}번</span>
+        <span class="mem-lb-time">${memFormatTime(e.time)}</span>
+      </div>`).join("");
+  } catch { rowsEl.innerHTML = '<p style="text-align:center;color:#475569;padding:12px 0">불러오기 실패</p>'; }
+}
+
+/* 게임 시작 */
+function memStartGame() {
+  const emojis = MEM_CARD_SETS[memDifficulty];
+  const pairs  = [...emojis, ...emojis];
+  memCards     = memShuffle(pairs).map((emoji, i) => ({ id: i, emoji, flipped: true, matched: false }));
+  memSelected  = [];
+  memMoves     = 0;
+  memMatched   = 0;
+  memElapsedMs = 0;
+  memIsChecking = false;
+  if (memPreviewTmr)  clearInterval(memPreviewTmr);
+  if (memElapsedTmr) clearInterval(memElapsedTmr);
+
+  document.getElementById("memSelectSection").classList.add("hidden");
+  document.getElementById("memResultSection").classList.add("hidden");
+  document.getElementById("memPlaySection").classList.remove("hidden");
+
+  memRenderGrid();
+  memUpdateStatusBar();
+
+  const countdown = document.getElementById("memCountdown");
+  countdown.classList.remove("hidden");
+  countdown.textContent = "3초 후 뒤집힙니다!";
+  let secs = 3;
+  memPreviewTmr = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(memPreviewTmr);
+      countdown.classList.add("hidden");
+      memCards.forEach(c => { c.flipped = false; });
+      memRenderGrid();
+      memStartTime  = Date.now();
+      memElapsedTmr = setInterval(() => { memElapsedMs = Date.now() - memStartTime; memUpdateStatusBar(); }, 100);
+    } else {
+      countdown.textContent = `${secs}초 후 뒤집힙니다!`;
+    }
+  }, 1000);
+}
+
+function memRenderGrid() {
+  const grid = document.getElementById("memGrid");
+  const cols  = MEM_GRID_COLS[memDifficulty];
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.innerHTML = memCards.map((card, i) => {
+    const cls = ["mem-card-btn",
+      (card.flipped || card.matched) ? "flipped" : "",
+      card.matched ? "matched" : "",
+      memSelected.includes(i) && !card.matched ? "selected" : "",
+    ].join(" ");
+    const disabled = (card.flipped || card.matched || memIsChecking) ? "disabled" : "";
+    return `<button class="${cls}" ${disabled} onclick="memCardClick(${i})" aria-label="${(card.flipped||card.matched)?card.emoji:'카드'}">
+      <div class="mem-card-inner">
+        <div class="mem-card-front">${card.emoji}</div>
+        <div class="mem-card-back">?</div>
+      </div>
+    </button>`;
+  }).join("");
+}
+
+function memUpdateStatusBar() {
+  const total = MEM_CARD_SETS[memDifficulty].length;
+  document.getElementById("memTimerStat").textContent = "⏱ " + memFormatTime(memElapsedMs);
+  document.getElementById("memMatchStat").textContent = `🎯 ${memMatched}/${total} 쌍`;
+  document.getElementById("memMovesStat").textContent = `👆 ${memMoves}번`;
+}
+
+function memCardClick(idx) {
+  if (memIsChecking) return;
+  const card = memCards[idx];
+  if (card.flipped || card.matched) return;
+  if (memSelected.includes(idx)) return;
+  card.flipped = true;
+  memSelected.push(idx);
+  memRenderGrid();
+  if (memSelected.length === 2) {
+    memIsChecking = true;
+    memMoves++;
+    memUpdateStatusBar();
+    const [a, b] = memSelected;
+    if (memCards[a].emoji === memCards[b].emoji) {
+      setTimeout(() => {
+        memCards[a].matched = true;
+        memCards[b].matched = true;
+        memMatched++;
+        memSelected = [];
+        memIsChecking = false;
+        memRenderGrid();
+        memUpdateStatusBar();
+        if (memMatched >= MEM_CARD_SETS[memDifficulty].length) memGameOver();
+      }, 500);
+    } else {
+      setTimeout(() => {
+        memCards[a].flipped = false;
+        memCards[b].flipped = false;
+        memSelected = [];
+        memIsChecking = false;
+        memRenderGrid();
+      }, 900);
+    }
+  }
+}
+
+function memGameOver() {
+  if (memElapsedTmr) clearInterval(memElapsedTmr);
+  const finalTime  = Date.now() - memStartTime;
+  memElapsedMs     = finalTime;
+  document.getElementById("memPlaySection").classList.add("hidden");
+  document.getElementById("memResultSection").classList.remove("hidden");
+  document.getElementById("memResultTime").textContent  = memFormatTime(finalTime);
+  document.getElementById("memResultMoves").textContent = memMoves + "번";
+  document.getElementById("memResultDiff").textContent  = MEM_DIFF_LABEL[memDifficulty];
+  document.getElementById("memRankSubmit").classList.remove("hidden");
+  document.getElementById("memRankSavedMsg").classList.add("hidden");
+  document.getElementById("memNicknameInput").value = "";
+  setTimeout(() => document.getElementById("memNicknameInput").focus(), 200);
+}
+
+/* 순위 등록 */
+async function memSubmitRank() {
+  const nick = document.getElementById("memNicknameInput").value.trim();
+  if (!nick) { document.getElementById("memNicknameInput").focus(); return; }
+  try {
+    await fetch(API_BASE + "/api/leaderboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game: "memory", nickname: nick, moves: memMoves, time: memElapsedMs, difficulty: memDifficulty }),
+    });
+  } catch {}
+  document.getElementById("memRankSubmit").classList.add("hidden");
+  document.getElementById("memRankSavedMsg").classList.remove("hidden");
+}
+
+/* 이벤트 바인딩 */
+document.querySelectorAll(".mem-diff-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mem-diff-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    memDifficulty = btn.dataset.mdiff;
+  });
+});
+
+document.getElementById("memStartBtn").addEventListener("click", memStartGame);
+document.getElementById("memGiveUpBtn").addEventListener("click", () => {
+  if (memPreviewTmr)  clearInterval(memPreviewTmr);
+  if (memElapsedTmr) clearInterval(memElapsedTmr);
+  document.getElementById("memPlaySection").classList.add("hidden");
+  document.getElementById("memSelectSection").classList.remove("hidden");
+  memRenderLeaderboard();
+});
+document.getElementById("memRankSaveBtn").addEventListener("click", memSubmitRank);
+document.getElementById("memNicknameInput").addEventListener("keydown", e => { if (e.key === "Enter") memSubmitRank(); });
+document.getElementById("memRankSkipBtn").addEventListener("click", () => {
+  document.getElementById("memRankSubmit").classList.add("hidden");
+  document.getElementById("memRankSavedMsg").classList.remove("hidden");
+});
+document.getElementById("memRestartBtn").addEventListener("click", () => {
+  document.getElementById("memResultSection").classList.add("hidden");
+  document.getElementById("memSelectSection").classList.remove("hidden");
+  memRenderLeaderboard();
+});
+document.getElementById("memViewRankBtn").addEventListener("click", () => {
+  document.getElementById("memResultSection").classList.add("hidden");
+  document.getElementById("memSelectSection").classList.remove("hidden");
+  memRenderLeaderboard();
+});
+document.getElementById("memClearRankBtn").addEventListener("click", async () => {
+  const key = window.prompt("🔑 관리자 키를 입력하세요:");
+  if (!key) return;
+  if (!confirm("기억력 게임 순위보드를 초기화할까요?")) return;
+  try {
+    const res = await fetch(API_BASE + "/api/leaderboard?game=memory", { method: "DELETE", headers: { "x-admin-key": key } });
+    if (res.ok) memRenderLeaderboard();
+    else alert("⚠ 관리자 키가 올바르지 않습니다.");
+  } catch { alert("⚠ 서버 연결 실패."); }
+});
+
+/* ----------------------------------------------------------
+   19. 시작
    ---------------------------------------------------------- */
 init();
