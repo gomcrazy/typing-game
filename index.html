@@ -21,13 +21,148 @@
   </div>
 
   <!-- ===========================
+       홈 선택 화면
+  ============================ -->
+  <div id="homePage">
+    <div class="home-content">
+      <header class="home-header">
+        <h1 class="home-title">🎮 게임 선택</h1>
+        <p class="home-subtitle">플레이할 게임을 선택하세요!</p>
+      </header>
+      <div class="home-cards">
+        <button class="home-card home-card-typing" onclick="showPage('main')">
+          <span class="home-card-icon">⌨️</span>
+          <div class="home-card-body">
+            <h2 class="home-card-title">타자 연습</h2>
+            <p class="home-card-desc">60초 안에 얼마나 많은 단어를 입력할 수 있을까요? WPM·정확도·순위보드까지!</p>
+          </div>
+          <span class="home-card-arrow">→</span>
+        </button>
+        <button class="home-card home-card-memory" onclick="showPage('memory')">
+          <span class="home-card-icon">🧠</span>
+          <div class="home-card-body">
+            <h2 class="home-card-title">기억력 카드</h2>
+            <p class="home-card-desc">카드 위치를 기억하고 짝을 맞춰보세요. 더 적은 시도로 완성할수록 높은 순위!</p>
+          </div>
+          <span class="home-card-arrow">→</span>
+        </button>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <div class="footer-links">
+        <button class="footer-link" onclick="showPage('guide')">📖 게임 설명</button>
+        <span class="footer-sep">·</span>
+        <button class="footer-link" onclick="showPage('updatelog')">📝 업데이트 로그</button>
+        <span class="footer-sep">·</span>
+        <button class="footer-link" onclick="showPage('privacy')">🔒 개인정보 처리방침</button>
+      </div>
+      <div class="footer-info">
+        <p>© 2026 gomcrazy. All rights reserved.</p>
+        <p>운영자: gomcrazy &nbsp;|&nbsp; 이메일: gomcrazy@kakao.com</p>
+        <p>본 사이트는 타자 연습 및 속도 측정 서비스를 제공합니다.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ===========================
+       기억력 카드 게임 페이지
+  ============================ -->
+  <div id="memoryPage" class="hidden">
+    <div class="mem-inner">
+      <div class="mem-header">
+        <button class="btn-back" onclick="showPage('home')">← 뒤로</button>
+        <h1 class="mem-title">🧠 기억력 카드 게임</h1>
+      </div>
+
+      <!-- 난이도 선택 / 순위보드 -->
+      <div id="memSelectSection">
+        <div class="mem-desc-box">
+          카드 위치를 기억했다가 같은 그림끼리 짝을 맞춰보세요!<br>
+          게임 시작 후 <strong>3초</strong> 동안 카드 위치를 보여줍니다.
+        </div>
+        <div class="mem-diff-btns">
+          <button class="mem-diff-btn active" data-mdiff="easy">쉬움 (6쌍)</button>
+          <button class="mem-diff-btn" data-mdiff="normal">보통 (8쌍)</button>
+          <button class="mem-diff-btn" data-mdiff="hard">어려움 (10쌍)</button>
+        </div>
+        <button class="btn-start" id="memStartBtn">게임 시작</button>
+
+        <!-- 기억력 순위보드 -->
+        <div class="mem-leaderboard">
+          <h3 class="mem-lb-title">🏆 전체 순위보드</h3>
+          <div class="mem-lb-table">
+            <div class="mem-lb-header">
+              <span>순위</span><span>닉네임</span><span>난이도</span><span>시도</span><span>시간</span>
+            </div>
+            <div id="memLbRows"></div>
+          </div>
+          <button class="btn-clear-rank" id="memClearRankBtn">순위 초기화</button>
+        </div>
+      </div>
+
+      <!-- 게임 플레이 영역 -->
+      <div id="memPlaySection" class="hidden">
+        <div class="mem-status-bar">
+          <span class="mem-stat" id="memTimerStat">⏱ 0초</span>
+          <span class="mem-stat" id="memMatchStat">🎯 0/0 쌍</span>
+          <span class="mem-stat" id="memMovesStat">👆 0번</span>
+          <span class="mem-countdown hidden" id="memCountdown">3초 후 뒤집힙니다!</span>
+        </div>
+        <div class="mem-grid" id="memGrid"></div>
+        <button class="mem-give-up" id="memGiveUpBtn">그만하기</button>
+      </div>
+
+      <!-- 결과 화면 -->
+      <div id="memResultSection" class="hidden">
+        <div class="mem-result">
+          <div class="mem-result-emoji">🎉</div>
+          <h2 class="mem-result-title">완성!</h2>
+          <div class="mem-result-stats">
+            <div class="mem-result-stat">
+              <span class="mem-result-label">걸린 시간</span>
+              <span class="mem-result-value" id="memResultTime">-</span>
+            </div>
+            <div class="mem-result-stat">
+              <span class="mem-result-label">시도 횟수</span>
+              <span class="mem-result-value" id="memResultMoves">-</span>
+            </div>
+            <div class="mem-result-stat">
+              <span class="mem-result-label">난이도</span>
+              <span class="mem-result-value" id="memResultDiff">-</span>
+            </div>
+          </div>
+
+          <div class="rank-submit" id="memRankSubmit">
+            <p class="rank-submit-label">🏅 순위보드에 기록할까요?</p>
+            <div class="rank-input-row">
+              <input type="text" class="nickname-input" id="memNicknameInput"
+                placeholder="닉네임 입력..." maxlength="12" autocomplete="off" />
+              <button class="btn-rank-save" id="memRankSaveBtn">등록</button>
+            </div>
+            <button class="mem-give-up" id="memRankSkipBtn">건너뛰기</button>
+          </div>
+          <div class="rank-saved hidden" id="memRankSavedMsg">
+            <p class="rank-saved-text">✅ 순위보드에 등록됐습니다!</p>
+          </div>
+
+          <div class="mem-result-btns">
+            <button class="btn-start" id="memRestartBtn">다시 도전</button>
+            <button class="mem-diff-change" id="memViewRankBtn">순위 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
        게임 메인 페이지
   ============================ -->
-  <div id="mainPage">
+  <div id="mainPage" class="hidden">
     <div class="container">
 
       <!-- 헤더 -->
       <header class="header">
+        <button class="btn-home-top" onclick="showPage('home')">🏠 홈으로</button>
         <h1 class="title">⌨️ 타자 연습</h1>
         <p class="subtitle" id="subtitle">얼마나 빠르게 입력할 수 있을까요?</p>
         <div class="header-badges">
@@ -204,6 +339,8 @@
 
     <footer class="site-footer">
       <div class="footer-links">
+        <button class="footer-link" onclick="showPage('home')">🏠 홈으로</button>
+        <span class="footer-sep">·</span>
         <button class="footer-link" onclick="showPage('guide')">📖 게임 설명</button>
         <span class="footer-sep">·</span>
         <button class="footer-link" onclick="showPage('updatelog')">📝 업데이트 로그</button>
@@ -224,7 +361,7 @@
   ============================ -->
   <div id="guidePage" class="info-page hidden">
     <div class="container info-container">
-      <button class="btn-back" onclick="showPage('main')">← 돌아가기</button>
+      <button class="btn-back" onclick="showPage('home')">← 돌아가기</button>
       <h1 class="info-title">📖 게임 설명</h1>
 
       <section class="info-section">
@@ -303,7 +440,7 @@
         <p>앞으로도 지속적인 업데이트를 통해 다양한 단어 세트, 난이도 조절 기능, 랭킹 시스템 등 더 많은 기능을 추가할 예정입니다. Type Speed Master를 통해 자신의 타자 실력을 꾸준히 향상시켜 보세요.</p>
       </section>
 
-      <button class="btn-start" onclick="showPage('main')" style="margin-top:8px">게임 시작하러 가기</button>
+      <button class="btn-start" onclick="showPage('home')" style="margin-top:8px">홈으로 돌아가기</button>
     </div>
   </div>
 
@@ -313,7 +450,7 @@
   ============================ -->
   <div id="updatelogPage" class="info-page hidden">
     <div class="container info-container">
-      <button class="btn-back" onclick="showPage('main')">← 돌아가기</button>
+      <button class="btn-back" onclick="showPage('home')">← 돌아가기</button>
       <h1 class="info-title">📝 업데이트 로그</h1>
       <p style="color:var(--color-text-muted);font-size:0.9rem;margin-bottom:4px">Update Log</p>
 
@@ -377,7 +514,7 @@
 
       </div>
 
-      <button class="btn-start" onclick="showPage('main')" style="margin-top:8px">게임 시작하러 가기</button>
+      <button class="btn-start" onclick="showPage('home')" style="margin-top:8px">게임 시작하러 가기</button>
     </div>
   </div>
 
@@ -387,7 +524,7 @@
   ============================ -->
   <div id="privacyPage" class="info-page hidden">
     <div class="container info-container">
-      <button class="btn-back" onclick="showPage('main')">← 돌아가기</button>
+      <button class="btn-back" onclick="showPage('home')">← 돌아가기</button>
       <h1 class="info-title">🔒 개인정보 처리방침</h1>
       <p class="info-updated">최종 업데이트: 2025년 1월</p>
 
@@ -427,7 +564,7 @@
         <p>본 서비스는 쿠키(Cookie)를 사용하지 않으며, 사용자 행동을 추적하는 분석 도구를 사용하지 않습니다.</p>
       </section>
 
-      <button class="btn-back-bottom" onclick="showPage('main')">← 게임으로 돌아가기</button>
+      <button class="btn-back-bottom" onclick="showPage('home')">← 게임으로 돌아가기</button>
     </div>
   </div>
 
