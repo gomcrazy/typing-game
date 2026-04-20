@@ -192,6 +192,16 @@ const rankSkipBtn         = document.getElementById("rankSkipBtn");
 const rankSavedMsgEl      = document.getElementById("rankSavedMsg");
 const viewRankBtn         = document.getElementById("viewRankBtn");
 const clearRankBtn        = document.getElementById("clearRankBtn");
+const shareSectionEl      = document.getElementById("shareSection");
+const shareTwitterEl      = document.getElementById("shareTwitter");
+const shareWebEl          = document.getElementById("shareWeb");
+const shareCopyEl         = document.getElementById("shareCopy");
+const challengeBannerEl   = document.getElementById("challengeBanner");
+const challengeTextEl     = document.getElementById("challengeText");
+
+let lbPeriod    = "all";  // 타자 순위보드 현재 탭
+let memLbPeriod = "all";  // 기억력 순위보드 현재 탭
+let challengeData = null; // 도전장 데이터 { game, score, wpm, accuracy, nick, diff, moves, time }
 const wordSourceBadge     = document.getElementById("wordSourceBadge");
 const mobileHint          = document.getElementById("mobileHint");
 
@@ -274,9 +284,10 @@ function renderLeaderboardData(entries) {
     lbRowsEl.appendChild(row);
   });
 }
-async function renderLeaderboard() {
+async function renderLeaderboard(period) {
+  if (period !== undefined) lbPeriod = period;
   try {
-    const res = await fetch(API_BASE + "/api/leaderboard?game=typing");
+    const res = await fetch(API_BASE + `/api/leaderboard?game=typing&period=${lbPeriod}`);
     const data = await res.json();
     renderLeaderboardData(data.leaderboard || []);
   } catch { renderLeaderboardData([]); }
@@ -296,6 +307,7 @@ async function submitToLeaderboard() {
   } catch {}
   rankSubmitEl.classList.add("hidden");
   rankSavedMsgEl.classList.remove("hidden");
+  showTypingShareSection(nicknameInputEl.value.trim() || "익명");
 }
 
 /* ----------------------------------------------------------
@@ -325,12 +337,123 @@ function loadServerWords() {
 }
 
 /* ----------------------------------------------------------
+   9-A. 공유 / 도전장 / 순위보드 탭
+   ---------------------------------------------------------- */
+const SITE_URL = "https://www.gomcrazy.lol";
+
+/* 공유 URL 생성 */
+function buildTypingShareUrl(nick) {
+  const p = new URLSearchParams({ c:"1", g:"typing", s:finalScore, w:lastWpm, a:lastAccuracy, n:nick, d:currentDifficulty });
+  return `${SITE_URL}/?${p}`;
+}
+function buildMemShareUrl(nick) {
+  const p = new URLSearchParams({ c:"1", g:"memory", t:memElapsedMs, m:memMoves, n:nick, d:memDifficulty });
+  return `${SITE_URL}/?${p}`;
+}
+
+/* 공유 텍스트 */
+function typingShareText(nick, url) {
+  return `⌨️ ${nick} 님의 타자 기록에 도전하세요!\n점수 ${finalScore}점 · WPM ${lastWpm} · 정확도 ${lastAccuracy}%\n${url}`;
+}
+function memShareText(nick, url) {
+  const diff = MEM_DIFF_LABEL ? MEM_DIFF_LABEL[memDifficulty] : memDifficulty;
+  return `🧠 ${nick} 님의 기억력 카드[${diff}] 기록에 도전하세요!\n${memFormatTime(memElapsedMs)} · ${memMoves}번 시도\n${url}`;
+}
+
+/* 타자 게임 공유 섹션 표시 */
+function showTypingShareSection(nick) {
+  if (!shareSectionEl) return;
+  const url = buildTypingShareUrl(nick);
+  const text = typingShareText(nick, url);
+  shareSectionEl.classList.remove("hidden");
+  shareTwitterEl.onclick = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  shareWebEl.onclick = () => {
+    if (navigator.share) navigator.share({ title:"타자 연습 게임 도전장", text, url });
+    else window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  };
+  shareCopyEl.onclick = async () => {
+    try { await navigator.clipboard.writeText(url); shareCopyEl.textContent = "✅ 복사됨!"; setTimeout(() => { shareCopyEl.textContent = "🔗 링크 복사"; }, 2000); }
+    catch { window.prompt("링크를 복사하세요:", url); }
+  };
+}
+
+/* 기억력 게임 공유 섹션 표시 */
+function showMemShareSection(nick) {
+  const section = document.getElementById("memShareSection");
+  if (!section) return;
+  const url = buildMemShareUrl(nick);
+  const text = memShareText(nick, url);
+  section.classList.remove("hidden");
+  document.getElementById("memShareTwitter").onclick = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  document.getElementById("memShareWeb").onclick = () => {
+    if (navigator.share) navigator.share({ title:"기억력 카드 게임 도전장", text, url });
+    else window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  };
+  document.getElementById("memShareCopy").onclick = async () => {
+    const btn = document.getElementById("memShareCopy");
+    try { await navigator.clipboard.writeText(url); btn.textContent = "✅ 복사됨!"; setTimeout(() => { btn.textContent = "🔗 링크 복사"; }, 2000); }
+    catch { window.prompt("링크를 복사하세요:", url); }
+  };
+}
+
+/* 도전장 배너 파싱 */
+function parseChallengeUrl() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get("c") !== "1") return;
+  const game = p.get("g") || "typing";
+  const nick = p.get("n") || "???";
+  let text = "";
+  if (game === "typing") {
+    const score = p.get("s") || "0";
+    const wpm   = p.get("w") || "0";
+    const acc   = p.get("a") || "0";
+    text = `⚔️ ${nick} 님 도전장! 점수 ${score}점 (WPM ${wpm}, 정확도 ${acc}%) 이겨보세요!`;
+    challengeData = { game, score:+score, wpm:+wpm, accuracy:+acc, nick };
+    showPage("main");
+  } else {
+    const t = p.get("t") || "0";
+    const m = p.get("m") || "0";
+    const diff = p.get("d") || "normal";
+    const diffLabel = { easy:"쉬움", normal:"보통", hard:"어려움" }[diff] || diff;
+    text = `⚔️ ${nick} 님 도전장! [${diffLabel}] ${memFormatTime(+t)} / ${m}번 이겨보세요!`;
+    challengeData = { game, time:+t, moves:+m, nick };
+    showPage("memory");
+  }
+  if (challengeBannerEl && challengeTextEl) {
+    challengeTextEl.textContent = text;
+    challengeBannerEl.classList.remove("hidden");
+  }
+  // URL 정리 (히스토리 교체)
+  history.replaceState(null, "", window.location.pathname);
+}
+
+/* 순위보드 기간 탭 — 타자 게임 */
+document.querySelectorAll("[data-period]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-period]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderLeaderboard(btn.dataset.period);
+  });
+});
+
+/* 순위보드 기간 탭 — 기억력 게임 */
+document.querySelectorAll("[data-mperiod]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-mperiod]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    memLbPeriod = btn.dataset.mperiod;
+    memRenderLeaderboard();
+  });
+});
+
+/* ----------------------------------------------------------
    9. 초기화
    ---------------------------------------------------------- */
 function init() {
   highScore = parseInt(localStorage.getItem("typingHighScore") || "0", 10);
   highScoreEl.textContent = highScore;
   applyDevice();
+  parseChallengeUrl();
   renderLeaderboard();
   loadServerWords();
 }
@@ -414,6 +537,7 @@ function endGame() {
   nicknameInputEl.value = "";
   rankSubmitEl.classList.remove("hidden");
   rankSavedMsgEl.classList.add("hidden");
+  shareSectionEl.classList.add("hidden");
   gameOverEl.classList.remove("hidden");
   startBtn.classList.add("hidden");
   updateWordSourceBadge();
@@ -660,10 +784,8 @@ document.querySelector(".difficulty-buttons").addEventListener("click", handleDi
 rankSaveBtn.addEventListener("click", submitToLeaderboard);
 nicknameInputEl.addEventListener("keydown", e => { if (e.key === "Enter") submitToLeaderboard(); });
 rankSkipBtn.addEventListener("click", () => {
-  gameOverEl.classList.add("hidden");
-  startBtn.classList.remove("hidden");
-  updateWordSourceBadge();
-  renderLeaderboard();
+  rankSubmitEl.classList.add("hidden");
+  showTypingShareSection("익명");
 });
 viewRankBtn.addEventListener("click", () => {
   gameOverEl.classList.add("hidden");
@@ -747,7 +869,7 @@ async function memRenderLeaderboard() {
   const rowsEl = document.getElementById("memLbRows");
   rowsEl.innerHTML = '<p style="text-align:center;color:#475569;padding:12px 0">불러오는 중...</p>';
   try {
-    const res  = await fetch(API_BASE + "/api/leaderboard?game=memory");
+    const res  = await fetch(API_BASE + `/api/leaderboard?game=memory&period=${memLbPeriod}`);
     const data = await res.json();
     const list = data.leaderboard || [];
     if (list.length === 0) {
@@ -896,6 +1018,7 @@ async function memSubmitRank() {
   } catch {}
   document.getElementById("memRankSubmit").classList.add("hidden");
   document.getElementById("memRankSavedMsg").classList.remove("hidden");
+  showMemShareSection(nick);
 }
 
 /* 이벤트 바인딩 */
@@ -920,6 +1043,7 @@ document.getElementById("memNicknameInput").addEventListener("keydown", e => { i
 document.getElementById("memRankSkipBtn").addEventListener("click", () => {
   document.getElementById("memRankSubmit").classList.add("hidden");
   document.getElementById("memRankSavedMsg").classList.remove("hidden");
+  showMemShareSection("익명");
 });
 document.getElementById("memRestartBtn").addEventListener("click", () => {
   document.getElementById("memResultSection").classList.add("hidden");
