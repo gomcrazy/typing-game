@@ -1675,6 +1675,71 @@ body.mobile .suggestion-chip { padding: 8px 12px; font-size: 0.88rem; }
   .home-card-desc { font-size: .82rem; }
 }
 
+/* 기타 개발 페이지 섹션 */
+.home-other-section {
+  width: 100%;
+  max-width: 520px;
+  margin: 28px auto 0;
+  padding: 0 4px;
+}
+.home-other-title {
+  font-size: .85rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0 0 12px;
+}
+.home-other-links { display: flex; flex-direction: column; gap: 8px; }
+.home-other-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #161b27;
+  border: 1px solid #2a2f45;
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .2s, background .2s, transform .15s;
+}
+.home-other-card:hover {
+  border-color: #4b5563;
+  background: #1c2333;
+  transform: translateY(-2px);
+}
+.home-other-icon { font-size: 1.5rem; flex-shrink: 0; }
+.home-other-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home-other-name {
+  font-size: .95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.home-other-desc {
+  font-size: .78rem;
+  color: #8b8fa8;
+}
+.home-other-arrow {
+  font-size: 1rem;
+  color: #4b5563;
+  transition: color .2s, transform .2s;
+}
+.home-other-card:hover .home-other-arrow { color: #a09aff; transform: translate(2px, -2px); }
+.home-other-contact {
+  margin: 14px 0 0;
+  font-size: .8rem;
+  color: #6b7280;
+  text-align: center;
+}
+.home-other-contact a { color: #a09aff; text-decoration: none; }
+.home-other-contact a:hover { text-decoration: underline; }
+
 /* ============================================================
    기억력 카드 게임
    ============================================================ */
