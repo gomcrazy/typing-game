@@ -364,28 +364,20 @@
       <button class="btn-back" onclick="showPage('home')">← 돌아가기</button>
       <h1 class="info-title">📖 게임 설명</h1>
 
+      <!-- ── 타자 연습 게임 ── -->
       <section class="info-section">
-        <h2>🎮 게임 방법</h2>
+        <h2>⌨️ 타자 연습 게임</h2>
         <ol class="info-list info-ordered">
-          <li>난이도를 선택하고 <strong>게임 시작</strong> 버튼을 누르세요.</li>
-          <li>화면에 표시되는 단어를 정확히 입력하세요.</li>
-          <li><strong>Enter</strong> 또는 <strong>Space</strong>를 누르면 정답 여부를 확인합니다.</li>
-          <li>60초 동안 최대한 많은 단어를 맞추세요!</li>
+          <li>홈 화면에서 <strong>타자 연습</strong>을 선택하세요.</li>
+          <li>난이도를 고른 뒤 <strong>게임 시작</strong> 버튼을 누르세요.</li>
+          <li>화면에 표시되는 단어를 정확히 입력하고 <strong>Enter</strong> 또는 <strong>Space</strong>를 누르세요.</li>
+          <li><strong>60초</strong> 동안 최대한 많은 단어를 맞추세요!</li>
           <li>게임 종료 후 닉네임을 입력하면 순위보드에 기록됩니다.</li>
         </ol>
       </section>
 
       <section class="info-section">
-        <h2>📱 스마트폰 사용 방법</h2>
-        <ul class="info-list">
-          <li>게임 시작 후 단어 화면을 탭하면 키보드가 자동으로 올라옵니다.</li>
-          <li>입력 후 <strong>완료(Return)</strong> 버튼을 누르면 정답 처리됩니다.</li>
-          <li>화면을 가로로 돌리면 더 넓은 화면에서 플레이할 수 있습니다.</li>
-        </ul>
-      </section>
-
-      <section class="info-section">
-        <h2>⚡ 난이도 안내</h2>
+        <h2>⚡ 타자 게임 난이도</h2>
         <div class="info-diff-cards">
           <div class="info-diff-card info-easy">
             <span class="info-diff-badge">쉬움</span>
@@ -406,19 +398,64 @@
       </section>
 
       <section class="info-section">
-        <h2>🏆 점수 시스템</h2>
+        <h2>🏆 타자 게임 점수 시스템</h2>
         <ul class="info-list">
           <li>단어를 정확히 입력할 때마다 <strong>+1점</strong></li>
-          <li>틀린 단어는 점수가 오르지 않습니다</li>
+          <li>게임 종료 시 <strong>WPM</strong>(분당 단어 수), <strong>CPM</strong>(분당 타수), <strong>정확도</strong>를 확인할 수 있습니다</li>
           <li>최고 기록은 기기에 자동 저장됩니다</li>
-          <li>상위 10개의 순위가 순위보드에 표시됩니다</li>
+          <li>상위 10개의 기록이 순위보드에 표시됩니다</li>
+        </ul>
+      </section>
+
+      <!-- ── 기억력 카드 게임 ── -->
+      <section class="info-section">
+        <h2>🧠 기억력 카드 게임</h2>
+        <ol class="info-list info-ordered">
+          <li>홈 화면에서 <strong>기억력 카드 게임</strong>을 선택하세요.</li>
+          <li>난이도를 고른 뒤 <strong>게임 시작</strong>을 누르세요.</li>
+          <li>게임 시작 후 <strong>3초</strong> 동안 모든 카드의 위치를 보여줍니다 — 잘 기억하세요!</li>
+          <li>카드가 뒤집히면 같은 그림끼리 두 장을 맞춰 보세요.</li>
+          <li>모든 쌍을 맞추면 게임이 종료되고 걸린 시간이 기록됩니다.</li>
+          <li>닉네임을 입력하면 순위보드에 등록됩니다.</li>
+        </ol>
+      </section>
+
+      <section class="info-section">
+        <h2>🃏 기억력 게임 난이도</h2>
+        <div class="info-diff-cards">
+          <div class="info-diff-card info-easy">
+            <span class="info-diff-badge">쉬움</span>
+            <p>카드 6쌍 (총 12장)</p>
+            <p class="info-example">처음 도전하는 분께 추천</p>
+          </div>
+          <div class="info-diff-card info-normal">
+            <span class="info-diff-badge">보통</span>
+            <p>카드 8쌍 (총 16장)</p>
+            <p class="info-example">집중력을 키우고 싶다면</p>
+          </div>
+          <div class="info-diff-card info-hard">
+            <span class="info-diff-badge">어려움 ⚡</span>
+            <p>카드 10쌍 (총 20장)</p>
+            <p class="info-example">기억력의 한계에 도전!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 공통 ── -->
+      <section class="info-section">
+        <h2>📱 스마트폰 사용 방법</h2>
+        <ul class="info-list">
+          <li>타자 게임: 단어 화면을 탭하면 키보드가 자동으로 올라옵니다</li>
+          <li>타자 게임: 입력 후 <strong>완료(Return)</strong> 버튼을 누르면 정답 처리됩니다</li>
+          <li>기억력 게임: 카드를 탭하여 뒤집으세요</li>
+          <li>화면을 가로로 돌리면 더 넓은 화면에서 플레이할 수 있습니다</li>
         </ul>
       </section>
 
       <section class="info-section">
         <h2>💡 단어 제안</h2>
         <ul class="info-list">
-          <li>게임에 추가하고 싶은 단어를 메인 화면 하단에서 제안할 수 있습니다</li>
+          <li>타자 게임에 추가하고 싶은 단어를 타자 연습 화면 하단에서 제안할 수 있습니다</li>
           <li>관리자가 검토 후 승인하면 전체 사용자에게 즉시 적용됩니다</li>
         </ul>
       </section>
@@ -426,18 +463,19 @@
       <section class="info-section">
         <h2>💡 팁</h2>
         <ul class="info-list">
-          <li>입력창 테두리가 <span style="color:#4caf82;font-weight:700">초록색</span>이면 올바르게 입력 중입니다</li>
-          <li>테두리가 <span style="color:#e05a6e;font-weight:700">빨간색</span>이면 단어가 맞지 않습니다</li>
-          <li>남은 시간이 5초 이하가 되면 타이머가 빨간색으로 깜빡입니다</li>
+          <li>타자 게임: 입력창 테두리가 <span style="color:#4caf82;font-weight:700">초록색</span>이면 올바르게 입력 중, <span style="color:#e05a6e;font-weight:700">빨간색</span>이면 틀린 입력입니다</li>
+          <li>타자 게임: 남은 시간이 5초 이하가 되면 타이머가 빨간색으로 깜빡입니다</li>
+          <li>기억력 게임: 3초 프리뷰 동안 패턴이나 위치를 빠르게 스캔하세요</li>
+          <li>언제든 상단의 <strong>🏠 홈으로</strong> 버튼을 누르면 게임 선택 화면으로 돌아갑니다</li>
         </ul>
       </section>
 
       <section class="info-section info-about">
         <h2>🎯 Type Speed Master란?</h2>
-        <p>Type Speed Master는 사용자의 타자 속도와 정확도를 쉽고 재미있게 측정할 수 있는 웹 기반 타자 연습 게임입니다. 별도의 설치 없이 웹 브라우저만 있으면 누구나 바로 플레이할 수 있으며, 초보자부터 숙련자까지 다양한 수준의 사용자가 자신의 타자 실력을 확인하고 향상시키는 데 도움을 줍니다.</p>
-        <p>이 게임은 제한된 시간 동안 제시되는 단어를 가능한 빠르고 정확하게 입력하는 방식으로 진행됩니다. 플레이어는 입력한 단어 수(WPM), 정확도(Accuracy), 분당 타수(CPM) 등 다양한 지표를 통해 자신의 실력을 객관적으로 확인할 수 있습니다. 또한 게임이 끝난 후에는 결과 화면을 통해 자신의 기록을 한눈에 확인할 수 있어 반복적인 연습과 실력 향상에 매우 효과적입니다.</p>
-        <p>Type Speed Master는 모바일과 PC 환경 모두에 최적화되어 있어 언제 어디서든 편하게 이용할 수 있습니다. 짧은 시간 동안 집중해서 즐길 수 있는 구조이기 때문에, 학생·직장인·개발자·작가 등 타자 실력이 중요한 모든 사용자에게 유용한 도구가 됩니다.</p>
-        <p>앞으로도 지속적인 업데이트를 통해 다양한 단어 세트, 난이도 조절 기능, 랭킹 시스템 등 더 많은 기능을 추가할 예정입니다. Type Speed Master를 통해 자신의 타자 실력을 꾸준히 향상시켜 보세요.</p>
+        <p>Type Speed Master는 타자 연습과 기억력 트레이닝을 한 곳에서 즐길 수 있는 웹 기반 미니 게임 플랫폼입니다. 별도의 설치 없이 브라우저만 있으면 누구나 바로 플레이할 수 있으며, 모바일과 PC 환경 모두에 최적화되어 있습니다.</p>
+        <p><strong>타자 연습 게임</strong>은 60초 동안 제시되는 단어를 빠르고 정확하게 입력해 WPM·CPM·정확도를 측정합니다. 반복 연습을 통해 타자 속도와 정확도를 꾸준히 향상시킬 수 있습니다.</p>
+        <p><strong>기억력 카드 게임</strong>은 3초 프리뷰 후 카드를 뒤집어 같은 그림끼리 맞추는 집중력·기억력 훈련 게임입니다. 짧은 시간 안에 두뇌를 활성화하는 데 효과적입니다.</p>
+        <p>두 게임 모두 게임별 독립 순위보드를 제공하여, 전국 플레이어들과 기록을 비교해볼 수 있습니다. 앞으로도 더 다양한 게임과 기능을 추가할 예정입니다.</p>
       </section>
 
       <button class="btn-start" onclick="showPage('home')" style="margin-top:8px">홈으로 돌아가기</button>
@@ -458,6 +496,43 @@
 
         <div class="update-log-item">
           <div class="update-log-header">
+            <span class="update-log-date">📅 2026.04.17</span>
+            <span class="update-log-title">게임 중 홈으로 돌아가기 버튼 추가</span>
+          </div>
+          <ul class="info-list">
+            <li>타자 연습 화면 상단에 <strong>🏠 홈으로</strong> 버튼 추가</li>
+            <li>홈으로 이동 시 타자 게임·기억력 게임 타이머 자동 정지 처리</li>
+          </ul>
+        </div>
+
+        <div class="update-log-item">
+          <div class="update-log-header">
+            <span class="update-log-date">📅 2026.04.12</span>
+            <span class="update-log-title">🧠 기억력 카드 게임 추가 + 홈 선택 화면 오픈</span>
+          </div>
+          <ul class="info-list">
+            <li>기억력 카드 매칭 게임 신규 출시 (쉬움 6쌍 / 보통 8쌍 / 어려움 10쌍)</li>
+            <li>게임 시작 시 3초 프리뷰로 카드 위치 공개</li>
+            <li>기억력 게임 전용 순위보드 추가</li>
+            <li>첫 화면을 게임 선택 홈 화면으로 개편</li>
+            <li>기억력 게임 ← 뒤로 버튼으로 홈 이동 지원</li>
+          </ul>
+        </div>
+
+        <div class="update-log-item">
+          <div class="update-log-header">
+            <span class="update-log-date">📅 2026.04.10</span>
+            <span class="update-log-title">공유 순위보드 — 게임별 분리 저장</span>
+          </div>
+          <ul class="info-list">
+            <li>타자 게임 순위와 기억력 게임 순위를 각각 독립적으로 저장</li>
+            <li>서버 API에 <code>?game=typing</code> / <code>?game=memory</code> 파라미터 적용</li>
+            <li>순위보드에서 게임별 최고 기록 상위 10위 표시</li>
+          </ul>
+        </div>
+
+        <div class="update-log-item">
+          <div class="update-log-header">
             <span class="update-log-date">📅 2026.01.10</span>
             <span class="update-log-title">모바일 UI 개선</span>
           </div>
@@ -474,29 +549,31 @@
           </div>
           <ul class="info-list">
             <li>WPM, 정확도, 오타 수를 더 보기 쉽게 재배치</li>
-            <li>결과 공유 기능 준비 작업 시작</li>
+            <li>게임 종료 후 닉네임 입력 → 순위보드 등록 흐름 정비</li>
           </ul>
         </div>
 
         <div class="update-log-item">
           <div class="update-log-header">
             <span class="update-log-date">📅 2026.01.05</span>
-            <span class="update-log-title">게임 설명 페이지 추가</span>
+            <span class="update-log-title">게임 설명 · 개인정보처리방침 페이지 추가</span>
           </div>
           <ul class="info-list">
-            <li>AdFit 심사를 위한 서비스 소개 페이지 작성</li>
+            <li>카카오 애드핏 심사를 위한 서비스 소개 페이지 작성</li>
             <li>게임 사용 방법 및 특징 정리</li>
+            <li>상단·하단 광고 배너(카카오 애드핏) 적용</li>
           </ul>
         </div>
 
         <div class="update-log-item">
           <div class="update-log-header">
             <span class="update-log-date">📅 2026.01.03</span>
-            <span class="update-log-title">타자 입력 정확도 계산 개선</span>
+            <span class="update-log-title">타자 입력 정확도 계산 개선 + 단어 제안 기능</span>
           </div>
           <ul class="info-list">
             <li>공백 처리 오류 수정</li>
             <li>특정 단어에서 정확도 계산이 잘못되던 문제 해결</li>
+            <li>사용자 단어 제안 → 관리자 검토·승인 시스템 추가</li>
           </ul>
         </div>
 
@@ -506,9 +583,9 @@
             <span class="update-log-title">Type Speed Master 첫 출시 🎉</span>
           </div>
           <ul class="info-list">
-            <li>기본 타자 연습 기능 구현</li>
-            <li>제한 시간 모드 추가</li>
-            <li>PC/모바일 자동 반응형 UI 적용</li>
+            <li>기본 타자 연습 기능 구현 (60초 제한 시간 모드)</li>
+            <li>쉬움 / 보통 / 어려움 난이도 3단계 적용</li>
+            <li>PC / 모바일 자동 반응형 UI 적용</li>
           </ul>
         </div>
 
