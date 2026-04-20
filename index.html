@@ -122,7 +122,11 @@
 
         <!-- 기억력 순위보드 -->
         <div class="mem-leaderboard">
-          <h3 class="mem-lb-title">🏆 전체 순위보드</h3>
+          <div class="lb-period-header">
+            <button class="lb-period-tab active" data-mperiod="all">🏆 전체</button>
+            <button class="lb-period-tab" data-mperiod="week">📅 주간</button>
+            <button class="lb-period-tab" data-mperiod="today">⭐ 오늘</button>
+          </div>
           <div class="mem-lb-table">
             <div class="mem-lb-header">
               <span>순위</span><span>닉네임</span><span>난이도</span><span>시도</span><span>시간</span>
@@ -178,6 +182,15 @@
             <p class="rank-saved-text">✅ 순위보드에 등록됐습니다!</p>
           </div>
 
+          <div class="share-section hidden" id="memShareSection">
+            <p class="share-label">📤 기록 공유하기</p>
+            <div class="share-btns">
+              <button class="btn-share-twitter" id="memShareTwitter">𝕏 트위터</button>
+              <button class="btn-share-web" id="memShareWeb">📱 공유하기</button>
+              <button class="btn-share-copy" id="memShareCopy">🔗 링크 복사</button>
+            </div>
+          </div>
+
           <div class="mem-result-btns">
             <button class="btn-start" id="memRestartBtn">다시 도전</button>
             <button class="mem-diff-change" id="memViewRankBtn">순위 보기</button>
@@ -192,6 +205,15 @@
   ============================ -->
   <div id="mainPage" class="hidden">
     <div class="container">
+
+      <!-- 도전장 배너 -->
+      <div class="challenge-banner hidden" id="challengeBanner">
+        <div class="challenge-banner-inner">
+          <span class="challenge-vs">⚔️</span>
+          <p id="challengeText">도전장이 도착했습니다!</p>
+          <button class="challenge-close" onclick="document.getElementById('challengeBanner').classList.add('hidden')">✕</button>
+        </div>
+      </div>
 
       <!-- 헤더 -->
       <header class="header">
@@ -294,12 +316,25 @@
           <button class="btn-start" id="viewRankBtn">순위 확인하기</button>
         </div>
 
+        <div class="share-section hidden" id="shareSection">
+          <p class="share-label">📤 기록 공유하기</p>
+          <div class="share-btns">
+            <button class="btn-share-twitter" id="shareTwitter">𝕏 트위터</button>
+            <button class="btn-share-web" id="shareWeb">📱 공유하기</button>
+            <button class="btn-share-copy" id="shareCopy">🔗 링크 복사</button>
+          </div>
+        </div>
+
         <button class="btn-start" id="restartBtn" style="margin-top:8px">다시 시작하기</button>
       </div>
 
       <!-- 순위보드 -->
       <div class="leaderboard" id="leaderboard">
-        <h3 class="leaderboard-title">🏆 전체 순위보드</h3>
+        <div class="lb-period-header">
+          <button class="lb-period-tab active" data-period="all">🏆 전체</button>
+          <button class="lb-period-tab" data-period="week">📅 주간</button>
+          <button class="lb-period-tab" data-period="today">⭐ 오늘</button>
+        </div>
         <div class="lb-table">
           <div class="lb-header">
             <span class="lb-rank">순위</span>
